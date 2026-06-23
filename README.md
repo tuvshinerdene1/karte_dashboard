@@ -68,39 +68,14 @@ Create the database:
 createdb hospital_db
 ```
 
-Run migrations (or run the SQL commands in 'database/schema.sql'):
+Run automated migrations to build out all tables and relationships:
 ```
-CREATE TABLE hospitals (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(255),
-  created_at TIMESTAMP DEFAULT NOW()
-);
+npm run migrate:up
+```
 
-CREATE TABLE bottlenecks (
-  id SERIAL PRIMARY KEY,
-  hospital_id INTEGER REFERENCES hospitals(id),
-  step_name VARCHAR(255),
-  wait_time INTEGER,
-  cost DECIMAL,
-  frequency INTEGER,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE alerts (
-  id SERIAL PRIMARY KEY,
-  hospital_id INTEGER REFERENCES hospitals(id),
-  severity INTEGER,
-  message TEXT,
-  created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
-  email VARCHAR(255) UNIQUE,
-  password VARCHAR(255),
-  role VARCHAR(50),
-  created_at TIMESTAMP DEFAULT NOW()
-);
+To drop all tables :
+```
+npm run migrate:down
 ```
 ## Running the Project
 

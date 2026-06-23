@@ -30,3 +30,119 @@ npm run dev
 4. axios : API calls
 5. react-flow-renderer : for flowchart visualization
 ```
+-----------------------------------------------------
+
+# Hospital Dashboard Backend
+
+## Setting up backend
+```
+git clone
+cd dashboard-backend
+```
+
+## Install dependencies 
+```
+npm install
+```
+
+## Set up environment variables
+```
+ncp .env.example .env
+```
+Edit `.env` with your configuration:
+```
+PORT=8080
+NODE_ENV=development
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=hospital_db
+DB_USER=postgres
+DB_PASSWORD=yourpassword
+JWT_SECRET=your_secret_key_here
+PYTHON_ML_SERVICE=http://localhost:5000
+```
+
+## Set up PostgreSQL database
+Create the database:
+```
+createdb hospital_db
+```
+
+Run migrations (or run the SQL commands in 'database/schema.sql'):
+```
+CREATE TABLE hospitals (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE bottlenecks (
+  id SERIAL PRIMARY KEY,
+  hospital_id INTEGER REFERENCES hospitals(id),
+  step_name VARCHAR(255),
+  wait_time INTEGER,
+  cost DECIMAL,
+  frequency INTEGER,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE alerts (
+  id SERIAL PRIMARY KEY,
+  hospital_id INTEGER REFERENCES hospitals(id),
+  severity INTEGER,
+  message TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE,
+  password VARCHAR(255),
+  role VARCHAR(50),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+## Running the Project
+
+**Development mode:**
+```
+npm run dev
+```
+
+**Production mode**
+```
+npm start
+```
+
+## Project Structure
+```
+src/
+
+├── server.js              # Main server & WebSocket setup
+
+├── config/
+
+│   └── database.js       # PostgreSQL connection pool
+
+├── routes/               # API endpoints
+
+│   ├── auth.js          # Login/logout routes
+
+│   ├── bottlenecks.js   # Bottleneck data routes
+
+│   ├── hospitals.js     # Hospital data routes
+
+│   └── alerts.js        # Alert routes
+
+├── controllers/          # Business logic (optional, can add later)
+
+│   ├── authController.js
+
+│   └── bottlenecksController.js
+
+└── models/              # Database queries (optional, can add later)
+
+├── User.js
+
+└── Bottleneck.js
+```

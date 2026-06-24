@@ -3,15 +3,14 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Clock, Users, TrendingUp } from 'lucide-react';
 import ProcessFlow from './ProcessFlow';
-import AlertsSection from './AlertsSection';
 import RequestsSection from './RequestsSection';
 import EnhancedFlowVisualization from './EnhancedFlowVisualization';
 import EnhancedAlerts from './EnhancedAlerts';
 import PatientCaseManagement from './PatientCaseManagement';
 import EnhancedMetrics from './EnhancedMetrics';
 import { useHealthcareFlowStore } from '@/store/healthcareFlowStore';
-import NotificationViewport from './NotificationViewport';
 import BottleneckAlertWatcher from './BottleneckAlertWatcher';
+import AlertNotificationCenter from './AlertNotificationCenter';
 
 type Tab = 'process' | 'alert' | 'requests' | 'patients' | 'flow';
 
@@ -35,7 +34,7 @@ export default function Dashboard() {
   return (
     <div className="flex flex-col h-full">
       <BottleneckAlertWatcher />
-      <NotificationViewport />
+      <AlertNotificationCenter />
 
       {/* Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
@@ -150,11 +149,6 @@ export default function Dashboard() {
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Key Metrics</h2>
               <EnhancedMetrics />
             </div>
-
-            <div className="bg-white rounded-lg shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Active Alerts</h2>
-              <EnhancedAlerts />
-            </div>
           </div>
         )}
         {activeTab === 'patients' && (
@@ -166,7 +160,12 @@ export default function Dashboard() {
           </div>
         )}
         {activeTab === 'process' && <ProcessFlow />}
-        {activeTab === 'alert' && <AlertsSection />}
+        {activeTab === 'alert' && (
+          <div className="bg-white rounded-lg shadow-lg p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Active Alerts</h2>
+            <EnhancedAlerts />
+          </div>
+        )}
         {activeTab === 'requests' && <RequestsSection />}
       </main>
     </div>

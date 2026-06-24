@@ -2,16 +2,16 @@
 
 import { useHealthcareFlowStore, Alert } from '@/store/healthcareFlowStore';
 import { AlertCircle, CheckCircle2, Clock, TrendingUp, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
 
-export default function EnhancedAlerts() {
+interface EnhancedAlertsProps {
+  showEmptyState?: boolean;
+}
+
+export default function EnhancedAlerts({
+  showEmptyState = true,
+}: EnhancedAlertsProps) {
   const { alerts, resolveAlert } = useHealthcareFlowStore();
-  const [displayAlerts, setDisplayAlerts] = useState<Alert[]>([]);
-
-  useEffect(() => {
-    // Filter unresolved alerts
-    setDisplayAlerts(alerts.filter((a) => !a.resolved).slice(-5)); // Show last 5
-  }, [alerts]);
+  const displayAlerts = alerts.filter((a) => !a.resolved).slice(-5);
 
   const getAlertIcon = (type: Alert['type']) => {
     switch (type) {
@@ -51,6 +51,10 @@ export default function EnhancedAlerts() {
     };
     return styles[type];
   };
+
+  if (displayAlerts.length === 0 && !showEmptyState) {
+    return null;
+  }
 
   if (displayAlerts.length === 0) {
     return (

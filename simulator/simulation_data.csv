@@ -1,0 +1,5 @@
+patient_id,hospital_id,service_name,step_name,base_duration_mins,arrival_offset_mins
+P-101,hosp-uuid-1,Cardiology,Reception,5,0
+P-101,hosp-uuid-1,Cardiology,Consultation,20,0
+P-102,hosp-uuid-1,Cardiology,Reception,5,10
+P-201,hosp-uuid-2,ER,Triage,10,2

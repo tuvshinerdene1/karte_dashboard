@@ -121,3 +121,56 @@ src/
 
 └── Bottleneck.js
 ```
+
+-------------------------------------------------------------------
+## Flow simulator (work in progress)
+This Python-based simulator is designed to stress-test our Hospital Bottleneck Detection system. 
+It mimics patient movement through various hospital services (Cardiology, ER, etc.) by sending real-time events to our Node.js/Express API.
+
+### Features
+1. Traffic Generation: Automatically creates patient journeys based on database metadata.
+2. System Stress Testing: Adjustable multipliers to simulate slow processing times.
+3. Simulated Speed: Control the ratio between real-time and simulation-time.
+4. Concurrent Processing: Handles multiple patients simultaneously using threading.
+
+### Set up instructions 
+1. Create the virtual environment
+```
+python -m venv vhospital
+```
+
+2. activate the environment
+```
+Windows (Command Prompt)	vhospital\Scripts\activate
+Windows (PowerShell)		.\vhospital\Scripts\Activate.ps1
+macOS / Linux			source vhospital/bin/activate
+```
+
+3. install dependencies 
+```
+pip install -r requirements.txt
+```
+
+### Running simulator
+1. ensure the backend is running
+2. launch the streamlit 
+```
+streamlit run simulator.py
+```
+
+### Deactivating the environment
+```
+deactivate
+```
+
+
+### API endpoints required 
+```
+GET /api/hospitals - Fetch list of hospitals.
+
+GET /api/hospitals/:id/services - Fetch services for a hospital.
+
+GET /api/hospitals/:id/services/:name/steps - Fetch the ordered steps for a specific service.
+
+POST /api/events - To send START and END signals for patients.
+```

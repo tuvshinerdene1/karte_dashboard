@@ -10,6 +10,8 @@ import EnhancedAlerts from './EnhancedAlerts';
 import PatientCaseManagement from './PatientCaseManagement';
 import EnhancedMetrics from './EnhancedMetrics';
 import { useHealthcareFlowStore } from '@/store/healthcareFlowStore';
+import NotificationViewport from './NotificationViewport';
+import BottleneckAlertWatcher from './BottleneckAlertWatcher';
 
 type Tab = 'process' | 'alert' | 'requests' | 'patients' | 'flow';
 
@@ -32,6 +34,9 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col h-full">
+      <BottleneckAlertWatcher />
+      <NotificationViewport />
+
       {/* Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="px-8 py-6">

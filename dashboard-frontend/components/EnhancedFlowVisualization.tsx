@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useHealthcareFlowStore } from '@/store/healthcareFlowStore';
 import MetadataPopover from './MetadataPopover';
 import {
@@ -11,8 +11,12 @@ import {
   ArrowRight,
   Repeat2,
   AlertCircle,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
 } from 'lucide-react';
 
+// --- Internal FlowNode Component ---
 interface FlowNodeProps {
   nodeType: 'appointment' | 'decision' | 'doctor' | 'loop' | 'emd' | 'emd-review' | 'done' | 'error';
   label: string;
@@ -23,45 +27,20 @@ interface FlowNodeProps {
   icon?: React.ReactNode;
 }
 
-function FlowNode({
-  nodeType,
-  label,
-  mongolian,
-  isHovered,
-  onHover,
-  description,
-  icon,
-}: FlowNodeProps) {
+function FlowNode({ nodeType, label, mongolian, isHovered, onHover, description, icon }: FlowNodeProps) {
   const getNodeStyles = () => {
-    const baseStyles = 'relative w-28 h-28 rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all hover:shadow-lg';
-
+    const baseStyles = 'relative w-36 h-20 bg-white border-2 flex flex-col items-center justify-center cursor-pointer transition-all duration-150 z-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.05)]';
     const styles: Record<string, string> = {
-      'appointment': 'bg-blue-50 border-2 border-blue-300 hover:border-blue-500',
-      'decision': 'bg-purple-50 border-2 border-purple-300 hover:border-purple-500',
-      'doctor': 'bg-green-50 border-2 border-green-300 hover:border-green-500',
-      'loop': 'bg-orange-50 border-2 border-orange-300 hover:border-orange-500',
-      'emd': 'bg-cyan-50 border-2 border-cyan-300 hover:border-cyan-500',
-      'emd-review': 'bg-indigo-50 border-2 border-indigo-300 hover:border-indigo-500',
-      'done': 'bg-green-50 border-2 border-green-400 hover:border-green-600',
-      'error': 'bg-red-50 border-2 border-red-300 hover:border-red-500',
+      appointment: 'border-blue-500 text-blue-700',
+      decision: 'border-purple-500 text-purple-700',
+      doctor: 'border-green-500 text-green-700',
+      loop: 'border-orange-500 text-orange-700',
+      emd: 'border-cyan-500 text-cyan-700',
+      'emd-review': 'border-indigo-500 text-indigo-700',
+      done: 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold',
+      error: 'border-red-500 text-red-700',
     };
-
-    return `${baseStyles} ${styles[nodeType] || styles['appointment']}`;
-  };
-
-  const getTextColor = () => {
-    const colors: Record<string, string> = {
-      'appointment': 'text-blue-700',
-      'decision': 'text-purple-700',
-      'doctor': 'text-green-700',
-      'loop': 'text-orange-700',
-      'emd': 'text-cyan-700',
-      'emd-review': 'text-indigo-700',
-      'done': 'text-green-700',
-      'error': 'text-red-700',
-    };
-
-    return colors[nodeType] || colors['appointment'];
+    return `${baseStyles} ${styles[nodeType] || styles['appointment']} ${isHovered ? 'translate-x-[-2px] translate-y-[-2px] shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)] border-current' : ''}`;
   };
 
   return (
@@ -71,312 +50,207 @@ function FlowNode({
         onMouseEnter={() => onHover?.(true)}
         onMouseLeave={() => onHover?.(false)}
       >
-        {icon || <Clock className={`w-8 h-8 mb-1 ${getTextColor()}`} />}
-        <p className={`text-xs font-semibold text-center ${getTextColor()}`}>{label}</p>
-        {nodeType === 'loop' && <Repeat2 className="absolute top-2 right-2 w-4 h-4 text-orange-600 animate-spin opacity-60" />}
-        {nodeType === 'error' && <AlertCircle className="absolute top-2 right-2 w-4 h-4 text-red-600" />}
+        <div className="flex items-center gap-2">
+          {icon || <Clock className="w-4 h-4" />}
+          <p className="text-[10px] uppercase font-black tracking-widest">{label}</p>
+        </div>
+        <p className="text-[9px] opacity-70 mt-1 font-mono">{mongolian}</p>
+        {nodeType === 'loop' && <Repeat2 className="absolute top-1 right-1 w-3 h-3 animate-spin-slow opacity-40" />}
       </div>
 
-      {nodeType === 'appointment' && <MetadataPopover nodeType="appointment" isHovered={isHovered || false} />}
-      {nodeType === 'doctor' && <MetadataPopover nodeType="doctor" isHovered={isHovered || false} />}
-      {nodeType === 'emd' && <MetadataPopover nodeType="emd" isHovered={isHovered || false} />}
-      {nodeType === 'done' && <MetadataPopover nodeType="done" isHovered={isHovered || false} />}
+      {['appointment', 'doctor', 'emd', 'done'].includes(nodeType) && (
+        <MetadataPopover nodeType={nodeType as any} isHovered={isHovered || false} />
+      )}
 
       {description && isHovered && (
-        <div className="absolute z-40 bottom-full left-1/2 transform -translate-x-1/2 mb-3 bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-black text-white text-[9px] p-2 pointer-events-none uppercase tracking-tighter leading-tight text-center">
           {description}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-1 h-1 bg-gray-900"></div>
         </div>
       )}
     </div>
   );
 }
 
-function FlowConnector({
-  direction = 'right',
-  isActive = true,
-  label,
-}: {
-  direction?: 'right' | 'down' | 'down-left' | 'down-right';
-  isActive?: boolean;
-  label?: string;
-}) {
-  const color = isActive ? 'stroke-gray-400' : 'stroke-gray-300';
-  const strokeWidth = isActive ? 2 : 1.5;
-
+// --- Industrial Orthogonal Connector ---
+function IndustrialConnector({ variant = 'down', isActive = true }: { variant?: 'down' | 'split-left' | 'split-right' | 'merge-left' | 'merge-right'; isActive?: boolean; }) {
   const paths: Record<string, string> = {
-    'right': 'M 0 50 L 100 50',
     'down': 'M 50 0 L 50 100',
-    'down-left': 'M 50 0 Q 0 50 -40 100',
-    'down-right': 'M 50 0 Q 100 50 140 100',
+    'split-left': 'M 100 0 L 100 50 L 0 50 L 0 100',
+    'split-right': 'M 0 0 L 0 50 L 100 50 L 100 100',
+    'merge-left': 'M 0 0 L 0 50 L 100 50 L 100 100',
+    'merge-right': 'M 100 0 L 100 50 L 0 50 L 0 100',
   };
 
   return (
-    <svg
-      className="absolute"
-      width={direction === 'right' ? '100' : '140'}
-      height={direction === 'right' ? '100' : '100'}
-      viewBox={direction === 'right' ? '0 0 100 100' : '0 0 140 100'}
-    >
-      <path d={paths[direction]} fill="none" stroke="currentColor" className={`${color} transition-colors`} strokeWidth={strokeWidth} strokeLinecap="round" />
-      {isActive && <path d={paths[direction]} fill="none" stroke="url(#gradient)" strokeWidth={strokeWidth} strokeLinecap="round" strokeDasharray="5,5" />}
-
-      <defs>
-        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#3b82f6" />
-          <stop offset="100%" stopColor="#10b981" />
-        </linearGradient>
-      </defs>
-
-      {label && direction === 'right' && (
-        <text x="50" y="35" textAnchor="middle" fontSize="10" fill="#666" className="pointer-events-none">
-          {label}
-        </text>
+    <svg className="overflow-visible w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <path d={paths[variant]} fill="none" stroke="#cbd5e1" strokeWidth="2" />
+      {isActive && (
+        <path d={paths[variant]} fill="none" stroke="#64748b" strokeWidth="2" strokeDasharray="6,6">
+          <animate attributeName="stroke-dashoffset" from="12" to="0" dur="1s" repeatCount="indefinite" />
+        </path>
       )}
-
-      <polygon points="95,50 90,45 90,55" fill="currentColor" className={color} />
+      <circle cx={variant.includes('left') ? (variant.includes('split') ? 0 : 100) : variant.includes('right') ? (variant.includes('split') ? 100 : 0) : 50} cy="100" r="3" fill="#64748b" />
     </svg>
   );
 }
 
+// --- Main Component ---
 export default function EnhancedFlowVisualization() {
-  const { appointmentMetrics, doctorMetrics } = useHealthcareFlowStore();
+  const { appointmentMetrics } = useHealthcareFlowStore();
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [drag, setDrag] = useState({ isDragging: false, x: 0, y: 0, left: 0, top: 0 });
 
-  const hasBottleneck = appointmentMetrics.totalWaiting > 8;
+  // Center the view on initial load
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = 1500 - scrollRef.current.clientWidth / 2;
+      scrollRef.current.scrollTop = 100;
+    }
+  }, []);
+
+  const handleZoom = (type: 'in' | 'out' | 'reset') => {
+    if (type === 'in') setZoom(prev => Math.min(prev + 0.2, 2));
+    else if (type === 'out') setZoom(prev => Math.max(prev - 0.2, 0.4));
+    else setZoom(1);
+  };
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setDrag({
+      isDragging: true,
+      x: e.clientX,
+      y: e.clientY,
+      left: scrollRef.current.scrollLeft,
+      top: scrollRef.current.scrollTop
+    });
+  };
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!drag.isDragging || !scrollRef.current) return;
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+    scrollRef.current.scrollLeft = drag.left - dx;
+    scrollRef.current.scrollTop = drag.top - dy;
+  };
 
   return (
-    <div className="relative w-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-8 overflow-auto">
-      {/* Background grid */}
-      <svg className="absolute inset-0 w-full h-full opacity-5" width="100%" height="100%">
-        <defs>
-          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#999" strokeWidth="0.5" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
-      </svg>
+    <div className="relative w-full h-[750px] bg-[#f8fafc] rounded-lg border-2 border-slate-300 overflow-hidden shadow-2xl">
+      
+      {/* HUD - Toolbar */}
+      <div className="absolute top-6 left-6 z-50 flex items-center gap-4">
+        <div className="flex bg-white border-2 border-slate-800 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <button onClick={() => handleZoom('in')} className="p-2 border-r-2 border-slate-800 hover:bg-slate-100"><ZoomIn size={18} /></button>
+          <button onClick={() => handleZoom('out')} className="p-2 border-r-2 border-slate-800 hover:bg-slate-100"><ZoomOut size={18} /></button>
+          <button onClick={() => handleZoom('reset')} className="p-2 hover:bg-slate-100"><Maximize size={18} /></button>
+        </div>
+        <div className="bg-slate-800 text-white px-3 py-1 font-mono text-xs tracking-tighter">
+          SCALE: {Math.round(zoom * 100)}%
+        </div>
+      </div>
 
-      {/* Main flow container */}
-      <div className="relative mx-auto" style={{ minHeight: '500px', maxWidth: '1400px' }}>
-        {/* Row 1: Appointment -> Decision */}
-        <div className="flex items-center justify-between mb-16 pl-0">
-          {/* Appointment */}
-          <FlowNode
-            nodeType="appointment"
-            label="цаг захиалга"
-            mongolian="Appointment"
-            icon={<Clock className="w-8 h-8 text-blue-600" />}
-            isHovered={hoveredNode === 'appointment'}
-            onHover={(hovered) => setHoveredNode(hovered ? 'appointment' : null)}
+      <div
+        ref={scrollRef}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={() => setDrag(d => ({ ...d, isDragging: false }))}
+        onMouseLeave={() => setDrag(d => ({ ...d, isDragging: false }))}
+        className={`w-full h-full overflow-auto no-scrollbar ${drag.isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+      >
+        <div 
+          className="relative transition-transform duration-75 origin-top flex flex-col items-center"
+          style={{ transform: `scale(${zoom})`, width: '3000px', height: '2000px', paddingTop: '100px' }}
+        >
+          {/* Engineering Blueprint Grid */}
+          <div className="absolute inset-0 pointer-events-none opacity-[0.05]" 
+            style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '40px 40px' }} 
           />
 
-          {/* Connector */}
-          <div className="relative w-32 flex items-center justify-center">
-            <FlowConnector direction="right" isActive={true} />
+          {/* 1. START */}
+          <FlowNode nodeType="appointment" label="1. Registration" mongolian="Цаг захиалга" isHovered={hoveredNode === 'apt'} onHover={(h) => setHoveredNode(h ? 'apt' : null)} />
+          <div className="h-8 w-12"><IndustrialConnector variant="down" /></div>
+
+          {/* 2. TRIAGE */}
+          <FlowNode nodeType="decision" label="2. System Triage" mongolian="Оношилгоо" icon={<ArrowRight className="w-4 h-4" />} isHovered={hoveredNode === 'dec'} onHover={(h) => setHoveredNode(h ? 'dec' : null)} />
+
+          {/* 3. ORTHOGONAL SPLIT */}
+          <div className="grid grid-cols-3 w-full max-w-4xl h-10">
+             <div className="h-full"><IndustrialConnector variant="split-left" /></div>
+             <div className="h-full"><IndustrialConnector variant="down" /></div>
+             <div className="h-full"><IndustrialConnector variant="split-right" /></div>
           </div>
 
-          {/* Decision Node */}
-          <FlowNode
-            nodeType="decision"
-            label="Treatment Type"
-            mongolian="Эмчилгээний төрөл"
-            icon={<ArrowRight className="w-8 h-8 text-purple-600" />}
-            isHovered={hoveredNode === 'decision'}
-            onHover={(hovered) => setHoveredNode(hovered ? 'decision' : null)}
-            description="Select treatment type after examination"
-          />
-        </div>
-
-        {/* Row 2: Three treatment paths */}
-        <div className="flex justify-between mb-16 px-12">
-          {/* Normal Treatment Path */}
-          <div className="flex flex-col items-center gap-8 flex-1">
-            <div className="relative h-20">
-              <FlowConnector direction="down" isActive={true} />
+          {/* 4. LANES */}
+          <div className="grid grid-cols-3 gap-32 w-full max-w-6xl">
+            {/* Lane A */}
+            <div className="flex flex-col items-center">
+              <FlowNode nodeType="doctor" label="3A. OPD Visit" mongolian="Үзлэг" isHovered={hoveredNode === 'doc'} onHover={(h) => setHoveredNode(h ? 'doc' : null)} />
+              <div className="h-8 w-12"><IndustrialConnector variant="down" /></div>
+              <FlowNode nodeType="emd" label="4A. EMD Logs" mongolian="ЭМД Бүртгэл" isHovered={hoveredNode === 'emd'} onHover={(h) => setHoveredNode(h ? 'emd' : null)} />
             </div>
 
-            <div className="flex flex-col items-center gap-6">
-              {/* Doctor Node */}
-              <FlowNode
-                nodeType="doctor"
-                label="эмч"
-                mongolian="Doctor"
-                icon={<Stethoscope className="w-8 h-8 text-green-600" />}
-                isHovered={hoveredNode === 'doctor'}
-                onHover={(hovered) => setHoveredNode(hovered ? 'doctor' : null)}
-              />
-
-              <div className="relative h-16">
-                <FlowConnector direction="down" isActive={true} />
+            {/* Lane B */}
+            <div className="flex flex-col items-center">
+              <FlowNode nodeType="loop" label="3B. IPD Ward" mongolian="Хэвтэн" isHovered={hoveredNode === 'loop1'} onHover={(h) => setHoveredNode(h ? 'loop1' : null)} />
+              <div className="mt-2 p-2 bg-slate-100 border border-slate-300 font-mono text-[8px] w-40 text-slate-500 uppercase tracking-tighter">
+                Status: In-Treatment<br/>Cycle: Daily Protocol
               </div>
+            </div>
 
-              {/* EМD Node */}
-              <FlowNode
-                nodeType="emd"
-                label="ЭМД"
-                mongolian="Insurance"
-                icon={<FileText className="w-8 h-8 text-cyan-600" />}
-                isHovered={hoveredNode === 'emd'}
-                onHover={(hovered) => setHoveredNode(hovered ? 'emd' : null)}
-              />
+            {/* Lane C */}
+            <div className="flex flex-col items-center">
+              <FlowNode nodeType="loop" label="3C. Rehab" mongolian="Сэргээн" isHovered={hoveredNode === 'loop2'} onHover={(h) => setHoveredNode(h ? 'loop2' : null)} />
+              <div className="mt-2 p-2 bg-slate-100 border border-slate-300 font-mono text-[8px] w-40 text-slate-500 uppercase tracking-tighter">
+                Status: Recovering<br/>Physiotherapy Active
+              </div>
             </div>
           </div>
 
-          {/* Inpatient (Хэвтэн) Loop Path */}
-          <div className="flex flex-col items-center gap-8 flex-1">
-            <div className="relative h-20">
-              <FlowConnector direction="down" isActive={true} />
+          {/* 5. ORTHOGONAL MERGE */}
+          <div className="grid grid-cols-3 w-full max-w-6xl h-10 mt-8">
+             <div className="h-full"><IndustrialConnector variant="merge-left" /></div>
+             <div className="h-full"><IndustrialConnector variant="down" /></div>
+             <div className="h-full"><IndustrialConnector variant="merge-right" /></div>
+          </div>
+
+          {/* 6. FINAL */}
+          <div className="flex flex-col items-center">
+            <FlowNode nodeType="emd-review" label="5. Validation" mongolian="ЭМД Хяналт" isHovered={hoveredNode === 'rev'} onHover={(h) => setHoveredNode(h ? 'rev' : null)} />
+            <div className="h-8 w-12"><IndustrialConnector variant="down" /></div>
+            <FlowNode nodeType="done" label="6. Exit System" mongolian="Дууссан" icon={<CheckCircle2 className="w-4 h-4" />} isHovered={hoveredNode === 'done'} onHover={(h) => setHoveredNode(h ? 'done' : null)} />
+          </div>
+
+          {/* Floated Metrics Warning */}
+          {appointmentMetrics.totalWaiting > 5 && (
+            <div className="absolute top-40 left-[1600px] bg-red-100 border-2 border-red-600 p-4 font-mono shadow-[8px_8px_0px_0px_#dc2626]">
+              <div className="flex items-center gap-2 text-red-600 font-black text-xs">
+                <AlertCircle size={16} /> SYSTEM OVERLOAD
+              </div>
+              <p className="text-[10px] text-red-500 mt-1">QUEUE_THRESHOLD_EXCEEDED</p>
             </div>
-
-            <FlowNode
-              nodeType="loop"
-              label="Хэвтэн"
-              mongolian="Daily Loop"
-              icon={<Repeat2 className="w-8 h-8 text-orange-600" />}
-              isHovered={hoveredNode === 'loop'}
-              onHover={(hovered) => setHoveredNode(hovered ? 'loop' : null)}
-              description="Daily treatment loop: 1-30 days"
-            />
-
-            <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4 max-w-xs">
-              <p className="text-xs font-semibold text-orange-700 mb-2">Daily Loop Process</p>
-              <ul className="text-xs text-orange-600 space-y-1">
-                <li>✓ Status: Нээлттэй</li>
-                <li>✓ Complete daily meds/procedures</li>
-                <li>✓ Check daily completion</li>
-                <li>✓ Send reminders if incomplete</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Rehabilitation (Сэргээн Засах) Loop Path */}
-          <div className="flex flex-col items-center gap-8 flex-1">
-            <div className="relative h-20">
-              <FlowConnector direction="down" isActive={true} />
-            </div>
-
-            <FlowNode
-              nodeType="loop"
-              label="Сэргээн Засах"
-              mongolian="Rehab Loop"
-              icon={<Repeat2 className="w-8 h-8 text-orange-600" />}
-              isHovered={hoveredNode === 'rehab'}
-              onHover={(hovered) => setHoveredNode(hovered ? 'rehab' : null)}
-              description="Rehabilitation loop: 1-30 days"
-            />
-
-            <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4 max-w-xs">
-              <p className="text-xs font-semibold text-orange-700 mb-2">Daily Loop Process</p>
-              <ul className="text-xs text-orange-600 space-y-1">
-                <li>✓ Status: Нээлттэй</li>
-                <li>✓ Complete daily meds/procedures</li>
-                <li>✓ Check daily completion</li>
-                <li>✓ Send reminders if incomplete</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Row 3: Convergence to EМD Review */}
-        <div className="flex items-center justify-center gap-4 mb-16 px-12">
-          <div className="flex-1 flex justify-center">
-            <div className="relative w-32 h-16">
-              <FlowConnector direction="down-right" isActive={true} />
-            </div>
-          </div>
-
-          <div className="flex-1 flex justify-center">
-            <div className="relative w-32 h-16">
-              <FlowConnector direction="down" isActive={true} />
-            </div>
-          </div>
-
-          <div className="flex-1 flex justify-center">
-            <div className="relative w-32 h-16">
-              <FlowConnector direction="down-left" isActive={true} />
-            </div>
-          </div>
-        </div>
-
-        {/* Row 4: EМD Review and completion */}
-        <div className="flex items-center justify-center gap-12 mb-16">
-          {/* EМD Review */}
-          <FlowNode
-            nodeType="emd-review"
-            label="ЭМД Review"
-            mongolian="ЭМД Validation"
-            icon={<CheckCircle2 className="w-8 h-8 text-indigo-600" />}
-            isHovered={hoveredNode === 'emd-review'}
-            onHover={(hovered) => setHoveredNode(hovered ? 'emd-review' : null)}
-            description="24-hour EМD review deadline"
-          />
-
-          <div className="relative w-32 flex items-center justify-center">
-            <FlowConnector direction="right" isActive={true} label="Approved" />
-          </div>
-
-          {/* Done */}
-          <FlowNode
-            nodeType="done"
-            label="DONE"
-            mongolian="Completed"
-            icon={<CheckCircle2 className="w-8 h-8 text-green-600" />}
-            isHovered={hoveredNode === 'done'}
-            onHover={(hovered) => setHoveredNode(hovered ? 'done' : null)}
-          />
-        </div>
-
-        {/* Error Path */}
-        {hasBottleneck && (
-          <div className="flex items-center justify-center gap-12 mt-12 px-12">
-            <p className="text-sm text-red-600 font-semibold">⚠ Error Path</p>
-            <div className="relative w-32 flex items-center justify-center">
-              <svg width="100" height="100" viewBox="0 0 100 100" className="absolute">
-                <path
-                  d="M 50 0 Q 100 50 50 100"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="stroke-red-400"
-                  strokeDasharray="5,5"
-                  markerEnd="url(#arrowRed)"
-                />
-              </svg>
-            </div>
-
-            <FlowNode
-              nodeType="error"
-              label="Error"
-              mongolian="Stopped"
-              icon={<AlertCircle className="w-8 h-8 text-red-600" />}
-              description="Process stopped due to error"
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur rounded-lg p-4 shadow-md">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-3 h-3 bg-blue-400 rounded"></div>
-            <span>Appointment Queue</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-3 h-3 bg-purple-400 rounded"></div>
-            <span>Decision Branch</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-3 h-3 bg-orange-400 rounded-full animate-spin"></div>
-            <span>Treatment Loop</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-3 h-3 bg-red-400 rounded"></div>
-            <span>Error Handler</span>
-          </div>
+          )}
         </div>
       </div>
+
+      {/* Legend Hud */}
+      <div className="absolute bottom-6 left-6 bg-slate-900 text-white p-4 font-mono text-[10px] border border-white/20 shadow-2xl">
+        <p className="border-b border-white/20 mb-2 pb-1 opacity-50 uppercase tracking-widest">Pipeline Legend</p>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2"><div className="w-2 h-2 bg-blue-500" /> REGISTRATION</div>
+          <div className="flex items-center gap-2"><div className="w-2 h-2 bg-purple-500" /> TRIAGE POINT</div>
+          <div className="flex items-center gap-2"><div className="w-2 h-2 bg-orange-500" /> RECURSIVE CARE</div>
+          <div className="flex items-center gap-2"><div className="w-2 h-2 bg-emerald-500" /> SYSTEM EXIT</div>
+        </div>
+      </div>
+
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 10s linear infinite; }
+      `}</style>
     </div>
   );
 }

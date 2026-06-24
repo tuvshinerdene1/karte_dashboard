@@ -64,7 +64,7 @@ export default function FlowStage({
   }, [stageData?.count]);
 
   return (
-    <div className="flex flex-col items-center relative">
+    <div className="flex flex-col items-center relative w-32 flex-shrink-0">
       {/* Main stage circle */}
       <div
         className={`relative w-24 h-24 rounded-full border-2 ${colors.border} ${colors.bg} shadow-lg overflow-hidden flex items-center justify-center`}

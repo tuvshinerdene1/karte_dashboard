@@ -1,11 +1,21 @@
 const db = require('./config/database');
 const express = require('express');
-require('dotenv').config();
-
+const monitoringRoutes = require('./routes/monitoringRoutes');
+const authMiddleware = require('./middleware/authMiddleware');
+const authRoutes = require('./routes/authRoutes');
 const app = express();
 
 app.use(express.json());
 
+//public routes
+app.use('/api/auth', authRoutes);
+
+//protected routes (only logged in users can see the dashboard)
+app.use('/api/monitoring',authMiddleware, monitoringRoutes);
+
+app.listen(3000, () => console.log('server running on port 3000'));
+
+require('dotenv').config();
 db.query('SELECT NOW()')
     .then(res =>{
         console.log('database connected at :', res.rows[0].now);

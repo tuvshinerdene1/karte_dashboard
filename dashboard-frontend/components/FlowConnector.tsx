@@ -10,153 +10,79 @@ interface FlowConnectorProps {
   animationPhase: number;
 }
 
-export default function FlowConnector({
-  fromStage,
-  toStage,
-  fromData,
-  toData,
-  animationPhase,
-}: FlowConnectorProps) {
-  const bottleneckIndex = Math.max(
-    fromData?.bottleneckIndex ?? 0,
-    toData?.bottleneckIndex ?? 0
-  );
+export default function FlowConnector({ fromStage, toStage, fromData, toData }: FlowConnectorProps) {
+  const bottleneckIndex = Math.max(fromData?.bottleneckIndex ?? 0, toData?.bottleneckIndex ?? 0);
 
-  // Determine connector color
-  const getConnectorColor = () => {
-    if (bottleneckIndex < 0.33) {
-      return {
-        stroke: '#22c55e',
-        glow: 'rgba(34, 197, 94, 0.5)',
-        particles: '#16a34a',
-      };
-    } else if (bottleneckIndex < 0.66) {
-      return {
-        stroke: '#eab308',
-        glow: 'rgba(234, 179, 8, 0.5)',
-        particles: '#ca8a04',
-      };
-    } else {
-      return {
-        stroke: '#ef4444',
-        glow: 'rgba(239, 68, 68, 0.5)',
-        particles: '#dc2626',
-      };
-    }
-  };
+  const colors = useMemo(() => {
+    if (bottleneckIndex < 0.33) return { stroke: '#22c55e', particles: '#16a34a', glow: 'rgba(34, 197, 94, 0.3)' };
+    if (bottleneckIndex < 0.66) return { stroke: '#eab308', particles: '#ca8a04', glow: 'rgba(234, 179, 8, 0.3)' };
+    return { stroke: '#ef4444', particles: '#dc2626', glow: 'rgba(239, 68, 68, 0.3)' };
+  }, [bottleneckIndex]);
 
-  const colors = getConnectorColor();
-
-  // Generate flowing particles
-  const flowParticles = useMemo(() => {
-    const count = 4;
-    return Array.from({ length: count }).map((_, i) => ({
-      id: i,
-      delay: (i * 100) / count,
-    }));
-  }, []);
+  const particles = [0, 1, 2];
 
   return (
-    <svg
-      className="w-full h-full"
-      viewBox="0 0 80 64"
-      preserveAspectRatio="none"
-      style={{ filter: `drop-shadow(0 0 8px ${colors.glow})` }}
-    >
-      {/* Main connector line */}
-      <defs>
-        <linearGradient
-          id={`gradient-${fromStage}-${toStage}`}
-          x1="0%"
-          y1="0%"
-          x2="100%"
-          y2="0%"
-        >
-          <stop offset="0%" stopColor={colors.stroke} stopOpacity="0.6" />
-          <stop offset="50%" stopColor={colors.stroke} stopOpacity="1" />
-          <stop offset="100%" stopColor={colors.stroke} stopOpacity="0.6" />
-        </linearGradient>
-      </defs>
+    <svg className="w-full h-full overflow-visible" viewBox="0 0 100 40" preserveAspectRatio="none">
+      {/* Glow Effect */}
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+        <feMerge>
+          <feMergeNode in="coloredBlur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
 
-      {/* Connection line with glow */}
-      <line
-        x1="5"
-        y1="32"
-        x2="75"
-        y2="32"
-        stroke={colors.stroke}
-        strokeWidth="3"
-        opacity="0.8"
+      {/* Main Path */}
+      <line 
+        x1="0" y1="20" x2="100" y2="20" 
+        stroke={colors.stroke} 
+        strokeWidth="3" 
         strokeLinecap="round"
+        filter="url(#glow)"
       />
 
-      {/* Animated dashed line overlay */}
-      <line
-        x1="5"
-        y1="32"
-        x2="75"
-        y2="32"
-        stroke={colors.stroke}
-        strokeWidth="2"
-        strokeDasharray="8,4"
-        opacity="0.4"
-        strokeLinecap="round"
-        style={{
-          animation: `flow 2s linear infinite`,
-          animationDirection: bottleneckIndex > 0.5 ? 'reverse' : 'normal',
-        }}
+      {/* Animated Flow Line */}
+      <line 
+        x1="0" y1="20" x2="100" y2="20" 
+        stroke="white" 
+        strokeWidth="1" 
+        strokeDasharray="4,8" 
+        opacity="0.5"
+      >
+        <animate 
+          attributeName="stroke-dashoffset" 
+          from="12" to="0" 
+          dur="1s" 
+          repeatCount="indefinite" 
+        />
+      </line>
+
+      {/* Arrow Head */}
+      <path 
+        d="M 92 14 L 100 20 L 92 26 Z" 
+        fill={colors.stroke} 
       />
 
-      {/* Arrow head */}
-      <polygon
-        points="75,32 68,28 70,32 68,36"
-        fill={colors.stroke}
-        opacity="0.8"
-      />
-
-      {/* Flowing particles */}
-      {flowParticles.map((particle) => (
-        <g key={particle.id}>
-          <circle
-            cx="5"
-            cy="32"
-            r="2"
-            fill={colors.particles}
-            opacity="0.7"
-            style={{
-              animation: `flowParticle 2s ease-in-out infinite`,
-              animationDelay: `${particle.delay}ms`,
-            }}
+      {/* Floating Particles */}
+      {particles.map((i) => (
+        <circle key={i} r="2.5" fill={colors.particles}>
+          <animate 
+            attributeName="cx" 
+            from="0" to="100" 
+            dur={`${1.5 + i * 0.5}s`} 
+            begin={`${i * 0.4}s`} 
+            repeatCount="indefinite" 
           />
-        </g>
+          <animate 
+            attributeName="opacity" 
+            values="0;1;1;0" 
+            keyTimes="0;0.2;0.8;1" 
+            dur={`${1.5 + i * 0.5}s`} 
+            begin={`${i * 0.4}s`} 
+            repeatCount="indefinite" 
+          />
+        </circle>
       ))}
-
-      <style jsx>{`
-        @keyframes flow {
-          0% {
-            strokeDashoffset: 0;
-          }
-          100% {
-            strokeDashoffset: 12;
-          }
-        }
-        @keyframes flowParticle {
-          0% {
-            cx: 5;
-            opacity: 0;
-          }
-          10% {
-            opacity: 0.7;
-          }
-          90% {
-            opacity: 0.7;
-          }
-          100% {
-            cx: 75;
-            opacity: 0;
-          }
-        }
-      `}</style>
     </svg>
   );
 }

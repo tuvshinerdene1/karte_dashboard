@@ -15,13 +15,13 @@ export default function FlowMetrics() {
 
   useEffect(() => {
     // Calculate aggregate statistics
-    const stageIds = Object.keys(stages);
-    const totalItems = stageIds.reduce((sum, id) => sum + (stages[id]?.count ?? 0), 0);
+    const stageIds = Object.keys(stages) as Array<keyof typeof stages>;
+    const totalItems = stageIds.reduce((sum, id) => sum + stages[id].count, 0);
     const avgProcessTime =
-      stageIds.reduce((sum, id) => sum + (stages[id]?.avgProcessTime ?? 0), 0) /
+      stageIds.reduce((sum, id) => sum + stages[id].avgProcessTime, 0) /
       Math.max(1, stageIds.length);
     const criticalBottleneck = Math.max(
-      ...stageIds.map((id) => stages[id]?.bottleneckIndex ?? 0)
+      ...stageIds.map((id) => stages[id].bottleneckIndex)
     );
 
     setStats({
@@ -61,8 +61,8 @@ export default function FlowMetrics() {
         label="Throughput"
         value={stats.throughput}
         unit="items/min"
-        trend="up"
-        trendValue="+5.2%"
+        trend="down"
+        trendValue="-0.45%"
       />
     </div>
   );

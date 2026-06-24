@@ -6,10 +6,10 @@ import FlowStage from './FlowStage';
 import FlowConnector from './FlowConnector';
 
 const STAGES = [
-  { id: 'appointment', label: 'цаг захиалга', mongolian: 'Appointment Request' },
-  { id: 'doctor', label: 'эмч', mongolian: 'Doctor' },
-  { id: 'emd', label: 'ЭМД', mongolian: 'Medical Record' },
-  { id: 'done', label: 'DONE', mongolian: 'Completed' },
+  { id: 'appointment' as const, label: 'цаг захиалга', mongolian: 'Appointment Request' },
+  { id: 'doctor' as const, label: 'эмч', mongolian: 'Doctor' },
+  { id: 'emd' as const, label: 'ЭМД', mongolian: 'Medical Record' },
+  { id: 'done' as const, label: 'DONE', mongolian: 'Completed' },
 ];
 
 export default function FlowVisualization() {
@@ -51,7 +51,7 @@ export default function FlowVisualization() {
                   stageId={stage.id}
                   label={stage.label}
                   mongolian={stage.mongolian}
-                  stageData={stages[stage.id]}
+                  stageData={stages[stage.id as keyof typeof stages]}
                   animationPhase={animationPhase}
                 />
               </div>
@@ -62,8 +62,8 @@ export default function FlowVisualization() {
                   <FlowConnector
                     fromStage={stage.id}
                     toStage={STAGES[index + 1].id}
-                    fromData={stages[stage.id]}
-                    toData={stages[STAGES[index + 1].id]}
+                    fromData={stages[stage.id as keyof typeof stages]}
+                    toData={stages[STAGES[index + 1].id as keyof typeof stages]}
                     animationPhase={animationPhase}
                   />
                 </div>

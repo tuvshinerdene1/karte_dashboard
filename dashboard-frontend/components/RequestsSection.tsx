@@ -74,7 +74,7 @@ export default function RequestsSection() {
                 Request ID
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                Patient
+                Doctor
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                 Appointment

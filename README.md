@@ -57,26 +57,31 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=hospital_db
 DB_USER=postgres
-DB_PASSWORD=yourpassword
+DB_PASSWORD=1234
 JWT_SECRET=your_secret_key_here
 PYTHON_ML_SERVICE=http://localhost:5000
 ```
 
 ## Set up PostgreSQL database
-Create the database:
+**Create the database:**
 ```
 createdb hospital_db
 ```
+Or you can use PG admin to create your db.(DB settings must match the .env above.)
 
-Run automated migrations to build out all tables and relationships:
+**Run automated migrations to build out all tables and relationships:**
 ```
 npm run migrate:up
 ```
 
-To drop all tables :
+**To drop all tables :**
 ```
 npm run migrate:down
 ```
+**Populating tables with mock data**
+
+there is ready to use sql query file in dashboard-backend/queries.
+you can directly run that query in pgadmin.
 ## Running the Project
 
 **Development mode:**
@@ -134,19 +139,30 @@ It mimics patient movement through various hospital services (Cardiology, ER, et
 4. Concurrent Processing: Handles multiple patients simultaneously using threading.
 
 ### Set up instructions 
-1. Create the virtual environment
+**1. Create the virtual environment**
 ```
 python -m venv vhospital
 ```
 
-2. activate the environment
-```
-Windows (Command Prompt)	vhospital\Scripts\activate
-Windows (PowerShell)		.\vhospital\Scripts\Activate.ps1
-macOS / Linux			source vhospital/bin/activate
+**2. activate the environment**
+
+Windows (Command Prompt)
+```	
+vhospital\Scripts\activate
 ```
 
-3. install dependencies 
+Windows (PowerShell)	
+```	
+.\vhospital\Scripts\Activate.ps1
+```
+
+macOS / Linux	
+```		
+source vhospital/bin/activate
+```
+
+**3. install dependencies **
+
 ```
 pip install -r requirements.txt
 ```

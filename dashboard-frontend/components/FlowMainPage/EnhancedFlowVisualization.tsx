@@ -2,11 +2,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useHealthcareFlowStore } from '@/store/healthcareFlowStore';
-import MetadataPopover from './MetadataPopover';
+import MetadataPopover from '../Processing_Meta_for_Main/MetadataPopover';
 import {
   Clock,
-  Stethoscope,
-  FileText,
   CheckCircle2,
   ArrowRight,
   Repeat2,
@@ -137,7 +135,7 @@ export default function EnhancedFlowVisualization() {
   };
 
   return (
-    <div className="relative w-full h-[750px] bg-[#f8fafc] rounded-lg border-2 border-slate-300 overflow-hidden shadow-2xl">
+    <div className="relative w-full h-187.5 bg-[#f8fafc] rounded-lg border-2 border-slate-300 overflow-hidden shadow-2xl">
       
       {/* HUD - Toolbar */}
       <div className="absolute top-6 left-6 z-50 flex items-center gap-4">

@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import FlowVisualization from './FlowVisualization';
-import FlowMetrics from './FlowMetrics';
+import FlowVisualization from './FlowVisualization2';
+import FlowMetrics from '../FlowProcess/FlowMetrics';
 import { useFlowStore } from '@/store/flowStore';
 
 export default function ProcessFlow() {

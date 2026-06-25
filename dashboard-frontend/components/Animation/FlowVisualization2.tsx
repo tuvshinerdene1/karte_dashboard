@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useFlowStore } from '@/store/flowStore';
-import FlowStage from './FlowStage';
-import FlowConnector from './FlowConnector';
+import FlowStage from '../FlowProcess/FlowStage';
+import FlowConnector from '../FlowProcess/FlowConnector';
 
 const STAGES = [
   { id: 'appointment' as const, label: 'цаг захиалга', mongolian: 'Appointment Request' },

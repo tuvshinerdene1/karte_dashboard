@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useFlowStore } from '@/store/flowStore';
-import MetricCard from './MetricCard';
+import MetricCard from '../Metric_Card_For_All/MetricCard';
 
 export default function FlowMetrics() {
   const { stages } = useFlowStore();

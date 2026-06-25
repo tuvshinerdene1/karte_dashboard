@@ -42,7 +42,7 @@ export default function FlowStage({
     } else {
       return {
         bg: 'bg-red-50',
-        border: 'border-red-300',
+        border: 'border-purple-300',
         dot: 'bg-red-500',
         text: 'text-red-700',
         accent: 'from-red-400 to-red-500',
@@ -133,7 +133,7 @@ export default function FlowStage({
           0%,
           100% {
             transform: scale(1);
-            opacity: 0.3;
+            opacity: 0.5;
           }
           50% {
             transform: scale(1.1);

@@ -25,19 +25,19 @@ export default function PatientCaseManagement() {
   };
 
   const handleAddPatient = () => {
-    if (newPatientName.trim()) {
-      addPatient({
-        id: `patient-${Date.now()}`,
-        name: newPatientName,
-        appointmentTime: new Date(),
-        currentStatus: 'Нээлттэй',
-        lastUpdated: new Date(),
-      });
-      setNewPatientName('');
-      setShowNewPatientForm(false);
-    }
-  };
-
+  if (newPatientName.trim()) {
+    addPatient({
+      id: `patient-${Date.now()}`,
+      name: newPatientName,
+      appointmentTime: new Date(),
+      currentStatus: 'Нээлттэй',
+      lastUpdated: new Date(),
+      h: `h-${Date.now()}`, // Generate a value
+    });
+    setNewPatientName('');
+    setShowNewPatientForm(false);
+  }
+};
   return (
     <div className="space-y-4">
       {/* Add New Patient */}

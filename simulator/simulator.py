@@ -2,164 +2,182 @@ import streamlit as st
 import requests
 import time
 import random
-import concurrent.futures
+import threading
 from datetime import datetime, timedelta
 
 # --- CONFIGURATION ---
 API_BASE_URL = "http://localhost:8080/api/hospital"
 
-st.set_page_config(page_title="Hospital Flow Simulator", layout="wide", page_icon="🏥")
+st.set_page_config(page_title="Hospital Flow Master", layout="wide", page_icon="🏥")
 
-# --- API DATA FETCHING ---
+# --- RAW API HELPERS (No Streamlit Decorators - Used by Thread) ---
+def raw_fetch_services(h_id):
+    try: return requests.get(f"{API_BASE_URL}/{h_id}/service").json()
+    except: return []
+
+def raw_fetch_steps(h_id, s_id):
+    try: return requests.get(f"{API_BASE_URL}/{h_id}/service/{s_id}/steps").json()
+    except: return []
+
+def raw_fetch_staff_for_step(step_id):
+    try: return requests.get(f"{API_BASE_URL}/steps/{step_id}/staff").json()
+    except: return []
+
+# --- CACHED API HELPERS (For UI only) ---
 @st.cache_data(ttl=60)
 def fetch_hospitals():
-    try:
-        return requests.get(API_BASE_URL).json()
+    try: return requests.get(API_BASE_URL).json()
     except: return []
 
 @st.cache_data(ttl=60)
-def fetch_services(h_id):
-    try:
-        return requests.get(f"{API_BASE_URL}/{h_id}/service").json()
-    except: return []
+def cached_fetch_services(h_id):
+    return raw_fetch_services(h_id)
 
 @st.cache_data(ttl=60)
-def fetch_steps(h_id, s_id):
-    try:
-        return requests.get(f"{API_BASE_URL}/{h_id}/service/{s_id}/steps").json()
-    except: return []
+def cached_fetch_steps(h_id, s_id):
+    return raw_fetch_steps(h_id, s_id)
 
-@st.cache_data(ttl=60)
-def fetch_staff_for_step(step_id):
-    try:
-        return requests.get(f"{API_BASE_URL}/steps/{step_id}/staff").json()
-    except: return []
+@st.cache_data(ttl=10)
+def cached_fetch_staff(step_id):
+    return raw_fetch_staff_for_step(step_id)
 
-# --- SIMULATION ENGINE ---
-def simulate_patient(p_index, h_id, s_id, stress, speed, global_start_dt, stagger_mins, doctor_assignments):
+# --- BACKGROUND ENGINE ---
+def run_simulation_task(sim_entry, work_list, num_patients, stress, speed, start_dt, stagger, assignments):
     """
-    p_index: used to stagger the start time
-    stagger_mins: max minutes between patient arrivals
+    Runs in a pure background thread. 
+    Does NOT use any st.* functions or cached functions.
     """
-    p_id = f"AUTO-{p_index}-{random.randint(1000, 9999)}"
-    
-    # CALCULATE PSEUDO ARRIVAL TIME
-    # Patient 0 starts at Start Time, Patient 1 starts ~stagger_mins later, etc.
-    arrival_offset = p_index * stagger_mins * random.uniform(0.7, 1.3)
-    current_pseudo_time = global_start_dt + timedelta(minutes=arrival_offset)
-    
     try:
-        steps = fetch_steps(h_id, s_id)
+        def simulate_patient(p_index, h_id, s_id):
+            p_id = f"SIM-{sim_entry['id']}-P{p_index}"
+            arrival_offset = p_index * stagger * random.uniform(0.7, 1.3)
+            current_pseudo_time = start_dt + timedelta(minutes=arrival_offset)
+            
+            # Use RAW functions here
+            steps = raw_fetch_steps(h_id, s_id)
+            for step in steps:
+                # Staff selection
+                assigned_id = assignments.get(step['id'])
+                if not assigned_id:
+                    staff = raw_fetch_staff_for_step(step['id'])
+                    assigned_id = random.choice(staff)['id'] if staff else None
+
+                # START
+                requests.post(f"{API_BASE_URL}/events", json={
+                    "patient_identifier": p_id, "hospital_step_id": step['id'],
+                    "action": "START", "staff_id": assigned_id,
+                    "custom_timestamp": current_pseudo_time.isoformat()
+                })
+
+                dur = step.get('mid_threshold_minutes', 15) * stress * random.uniform(0.8, 1.2)
+                current_pseudo_time += timedelta(minutes=dur)
+                
+                # Throttle sleep
+                time.sleep(max(0.01, (dur / speed))) 
+
+                # END
+                requests.post(f"{API_BASE_URL}/events", json={
+                    "patient_identifier": p_id, "hospital_step_id": step['id'],
+                    "action": "END", "custom_timestamp": current_pseudo_time.isoformat()
+                })
+
+        # Process work list
+        for h_id, s_id in work_list:
+            for i in range(num_patients):
+                simulate_patient(i, h_id, s_id)
         
-        for step in steps:
-            step_id = step['id']
-            
-            # Staff Logic
-            assigned_staff_id = None
-            if doctor_assignments and step_id in doctor_assignments and doctor_assignments[step_id]:
-                assigned_staff_id = doctor_assignments[step_id]
-            else:
-                staff_list = fetch_staff_for_step(step_id)
-                assigned_staff_id = random.choice(staff_list)['id'] if staff_list else None
+        sim_entry['status'] = "Completed ✅"
 
-            # 1. START EVENT (Pseudo-time)
-            requests.post(f"{API_BASE_URL}/events", json={
-                "patient_identifier": p_id,
-                "hospital_step_id": step_id,
-                "action": "START",
-                "staff_id": assigned_staff_id,
-                "custom_timestamp": current_pseudo_time.isoformat()
-            })
-            
-            # 2. DURATION CALCULATION
-            base_mins = step.get('mid_threshold_minutes', 15)
-            sim_mins = base_mins * stress * random.uniform(0.8, 1.2)
-            
-            # 3. UPDATE CLOCK
-            current_pseudo_time += timedelta(minutes=sim_mins)
-            
-            # 4. THROTTLE (Real-world wait)
-            time.sleep(max(0.1, sim_mins / speed))
-            
-            # 5. END EVENT (Pseudo-time)
-            requests.post(f"{API_BASE_URL}/events", json={
-                "patient_identifier": p_id,
-                "hospital_step_id": step_id,
-                "action": "END",
-                "custom_timestamp": current_pseudo_time.isoformat()
-            })
-            
     except Exception as e:
-        print(f"Error for {p_id}: {e}")
+        sim_entry['status'] = f"Error ❌: {str(e)}"
 
 # --- UI ---
-st.title("🏥 Pseudo-Time Hospital Simulator")
-st.markdown("Simulate specific time blocks (e.g., a busy Monday morning) with staggered patient arrivals.")
+if 'simulations' not in st.session_state:
+    st.session_state.simulations = []
+
+st.title("🏥 Multi-Simulation Manager")
 
 col1, col2 = st.columns([1, 1])
 final_doctor_assignments = {}
 
 with col1:
-    st.header("1. Target Scope")
+    st.header("1. New Simulation")
     hospitals = fetch_hospitals()
     hosp_options = [{"id": "ALL", "name": "🌍 All Hospitals"}] + hospitals
     sel_hosp = st.selectbox("Hospital", hosp_options, format_func=lambda x: x['name'])
     
     sel_svc = {"id": "ALL", "service_name": "All Services"}
     if sel_hosp['id'] != "ALL":
-        services = fetch_services(sel_hosp['id'])
+        services = cached_fetch_services(sel_hosp['id'])
         svc_options = [{"id": "ALL", "service_name": "📦 All Services"}] + services
         sel_svc = st.selectbox("Service", svc_options, format_func=lambda x: x['service_name'])
         
         if sel_svc['id'] != "ALL":
-            st.divider()
-            st.subheader(f"Staffing for {sel_svc['service_name']}")
-            steps = fetch_steps(sel_hosp['id'], sel_svc['id'])
-            for step in steps:
-                staff_list = fetch_staff_for_step(step['id'])
-                options = [{"id": None, "full_name": "🎲 Random"}] + staff_list
-                choice = st.selectbox(f"Step: {step['step_name']}", options, format_func=lambda x: x['full_name'], key=step['id'])
-                final_doctor_assignments[step['id']] = choice['id']
+            with st.expander("Granular Staffing (Optional)"):
+                steps = cached_fetch_steps(sel_hosp['id'], sel_svc['id'])
+                for step in steps:
+                    staff = cached_fetch_staff(step['id'])
+                    choice = st.selectbox(f"{step['step_name']}", [{"id": None, "full_name": "🎲 Random"}] + staff, format_func=lambda x: x['full_name'], key=f"staff_{step['id']}")
+                    final_doctor_assignments[step['id']] = choice['id']
 
 with col2:
-    st.header("2. Pseudo-Clock & Timing")
-    
+    st.header("2. Timing & Load")
     c1, c2 = st.columns(2)
-    with c1:
-        p_date = st.date_input("Simulation Date", datetime.now())
-    with c2:
-        p_time = st.time_input("Arrival Start Time", datetime.now().replace(hour=8, minute=0))
+    p_date = c1.date_input("Pseudo Date", datetime.now())
+    p_time = c2.time_input("Start Time", datetime.now().replace(hour=8, minute=0))
+    start_dt = datetime.combine(p_date, p_time)
     
-    global_start_dt = datetime.combine(p_date, p_time)
-    
-    st.divider()
-    stagger = st.slider("Arrival Interval (Avg mins between patients)", 0, 30, 10)
-    num_patients = st.number_input("Total Patients per Stream", 1, 100, 5)
-    
-    st.divider()
-    sim_speed = st.slider("Sim Speed (1s real : X mins sim)", 1, 200, 40)
-    stress = st.slider("Step Duration Stress", 0.5, 5.0, 1.0)
+    stagger = st.number_input("Mins between patients", 0, 60, 10)
+    num_p = st.number_input("Patients per stream", 1, 100, 5)
+    speed = st.slider("Sim Speed", 1, 1000, 100)
+    stress = st.slider("Stress Multiplier", 0.1, 5.0, 1.0)
 
-    if st.button("🚀 Start Pseudo-Time Simulation", use_container_width=True):
+    if st.button("🚀 Launch Simulation", use_container_width=True):
         work_list = []
         if sel_hosp['id'] == "ALL":
             for h in hospitals:
-                for s in fetch_services(h['id']): work_list.append((h['id'], s['id']))
+                svcs = raw_fetch_services(h['id'])
+                for s in svcs: work_list.append((h['id'], s['id']))
         elif sel_svc['id'] == "ALL":
-            for s in fetch_services(sel_hosp['id']): work_list.append((sel_hosp['id'], s['id']))
+            svcs = raw_fetch_services(sel_hosp['id'])
+            for s in svcs: work_list.append((sel_hosp['id'], s['id']))
         else:
             work_list.append((sel_hosp['id'], sel_svc['id']))
 
-        is_granular = (sel_hosp['id'] != "ALL" and sel_svc['id'] != "ALL")
-        
-        with st.spinner("Simulating... Check your DB/Dashboard for timestamps."):
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                tasks = []
-                for h_id, s_id in work_list:
-                    assignments = final_doctor_assignments if is_granular else None
-                    for i in range(num_patients):
-                        tasks.append(executor.submit(
-                            simulate_patient, i, h_id, s_id, stress, sim_speed, global_start_dt, stagger, assignments
-                        ))
-                concurrent.futures.wait(tasks)
-        st.success(f"Finished! Patients simulated starting from {global_start_dt.strftime('%H:%M')}")
+        sim_id = str(random.randint(1000, 9999))
+        new_sim = {
+            "id": sim_id,
+            "target": f"{sel_hosp['name']} / {sel_svc['service_name']}",
+            "status": "Running 🏃‍♂️",
+            "params": f"Pats: {num_p}, Stress: {stress}, Speed: {speed}"
+        }
+        st.session_state.simulations.append(new_sim)
+
+        # Start standard thread without Streamlit Context
+        thread = threading.Thread(
+            target=run_simulation_task, 
+            args=(new_sim, work_list, num_p, stress, speed, start_dt, stagger, final_doctor_assignments.copy()),
+            daemon=True
+        )
+        thread.start()
+        st.toast(f"Simulation {sim_id} started!")
+
+# --- SIMULATION MONITOR ---
+st.divider()
+st.header("🕵️‍♂️ Active & Recent Simulations")
+
+if not st.session_state.simulations:
+    st.write("No active simulations.")
+else:
+    for sim in reversed(st.session_state.simulations):
+        with st.container():
+            c1, c2, c3, c4 = st.columns([1, 2, 2, 1])
+            c1.write(f"**ID:** {sim['id']}")
+            c2.write(f"**Target:** {sim['target']}")
+            c3.write(f"**Config:** {sim['params']}")
+            c4.write(f"**Status:** {sim['status']}")
+            st.divider()
+
+if any(s['status'] == "Running 🏃‍♂️" for s in st.session_state.simulations):
+    time.sleep(2)
+    st.rerun()

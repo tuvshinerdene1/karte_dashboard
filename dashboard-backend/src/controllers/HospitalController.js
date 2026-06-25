@@ -18,6 +18,23 @@ exports.getHospitalConfig = async (req, res) => {
     }
 };
 
+exports.getHospitalServices = async (req, res) => {
+    try{
+        const services = await HospitalModel.getServices(req.params.id);
+        res.json(services);
+    }catch(err){
+        res.status(500).json({error: err.message});
+    }
+};
+exports.getHospitalServiceSteps = async (req, res) =>{
+    try{
+        const steps = await HospitalModel.getServiceSteps(req.params.id, req.params.serviceId);
+        res.json(steps);
+    }catch(err){
+        res.status(500).json({error: err.message});
+    }
+};
+
 exports.updateStepThresholds = async (req, res) => {
     try {
         const { mid, high } = req.body;
@@ -40,3 +57,25 @@ exports.getStaffByStep = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+exports.handleEvent = async (req, res) => {
+    try{
+        const {patient_identifier, hospital_step_id, action} = req.body;
+
+        if(!patient_identifier || !hospital_step_id || !action){
+            return res.status(400).json({
+                error:"Missing required fields: patient_identifier, hospital_step_id, or action" 
+            });
+        }
+
+        const result = await HospitalModel.processEvent(patient_identifier, hospital_step_id, action);
+        
+        //return 201 for created (start) or 200 for ok (end)
+        const statusCode = action === 'START' ? 201 : 200;
+        return res.status(statusCode).json(result);
+    }
+    catch(error){
+        console.error("Controller error: ", error.message);
+        return res.status(500).json({error:error.message});
+    }
+}

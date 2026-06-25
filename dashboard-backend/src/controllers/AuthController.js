@@ -32,10 +32,10 @@ exports.login = async (req, res) =>{
 
         const token = jwt.sign(
             {
-                userId: user.indexOf,
+                userId: user.id,
                 role: user.role,
-                hospitalId: user.hospitalId,
-                staffId: user.staffId
+                hospitalId: user.hospital_id || user.hospitalId,
+                staffId: user.staff_id || user.staffId
             },
             process.env.JWT_SECRET || '1234',
             {expiresIn: '8h'}
@@ -47,7 +47,7 @@ exports.login = async (req, res) =>{
                 id: user.id,
                 username: user.username,
                 role: user.role,
-                hospitalId: user.hospitalId
+                hospitalId: user.hospital_id || user.hospitalId
             }
         });
     } catch (err){

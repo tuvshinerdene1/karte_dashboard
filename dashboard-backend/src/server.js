@@ -3,17 +3,19 @@ const express = require('express');
 const monitoringRoutes = require('./routes/monitoringRoutes');
 const authMiddleware = require('./middleware/authMiddleware');
 const authRoutes = require('./routes/authRoutes');
+const hospitalRoutes = require('./routes/hospitalRoutes');
 const app = express();
 
 app.use(express.json());
 
-//public routes
+// public routes
 app.use('/api/auth', authRoutes);
 
-//protected routes (only logged in users can see the dashboard)
-app.use('/api/monitoring',authMiddleware, monitoringRoutes);
+// protected routes (only logged in users can see the dashboard)
+app.use('/api/monitoring', authMiddleware, monitoringRoutes);
 
-app.listen(3000, () => console.log('server running on port 3000'));
+// hospital routes require auth inside the router
+app.use('/api/hospital', hospitalRoutes);
 
 require('dotenv').config();
 db.query('SELECT NOW()')

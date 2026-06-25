@@ -1,7 +1,14 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = (req, res, next) =>{
-    const token = req.header('Authorization')?.split(' ')[1];
+    // Allow bypassing auth for local testing when DISABLE_AUTH=true
+    if (process.env.DISABLE_AUTH === 'true'){
+        req.user = { userId: null, role: 'dev' };
+        return next();
+    }
+
+    const authHeader = req.header('Authorization');
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token){
         return res.status(401).json({message: "No token, authorization denied"});

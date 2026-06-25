@@ -10,6 +10,7 @@ router.get('/:id/config', controller.getHospitalConfig);
 router.get('/:id/service', controller.getHospitalServices);
 router.get('/:id/service/:serviceId/steps', controller.getHospitalServiceSteps);
 router.get('/steps/:stepId/staff', controller.getStaffByStep);
+router.get('/:id/staff', controller.getHospitalStaff)
 
 // router.patch('/steps/:stepId/thresholds', (req, res, next) => {
 //     if (req.user.role !== 'admin' && req.user.role !== 'operator') {
@@ -21,4 +22,3 @@ router.get('/steps/:stepId/staff', controller.getStaffByStep);
 router.post('/events', controller.handleEvent);
 
 module.exports = router;
-

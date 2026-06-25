@@ -49,6 +49,16 @@ exports.updateStepThresholds = async (req, res) => {
     }
 };
 
+exports.getHospitalStaff = async (req, res) =>{
+    try {
+        const staff = await HospitalModel.getAllStaff(req.params.id);
+        res.json(staff);
+    }
+    catch(err){
+        res.status(500).json({error:err.message});
+    }
+};
+
 exports.getStaffByStep = async (req, res) => {
     try {
         const staff = await HospitalModel.getAssignedStaff(req.params.stepId);
@@ -60,7 +70,7 @@ exports.getStaffByStep = async (req, res) => {
 
 exports.handleEvent = async (req, res) => {
     try{
-        const {patient_identifier, hospital_step_id, action} = req.body;
+        const {patient_identifier, hospital_step_id, action,staff_id, custom_timestamp} = req.body;
 
         if(!patient_identifier || !hospital_step_id || !action){
             return res.status(400).json({
@@ -68,8 +78,13 @@ exports.handleEvent = async (req, res) => {
             });
         }
 
-        const result = await HospitalModel.processEvent(patient_identifier, hospital_step_id, action);
-        
+        const result = await HospitalModel.processEvent(
+            patient_identifier, 
+            hospital_step_id, 
+            action, 
+            staff_id, 
+            custom_timestamp
+        );
         //return 201 for created (start) or 200 for ok (end)
         const statusCode = action === 'START' ? 201 : 200;
         return res.status(statusCode).json(result);

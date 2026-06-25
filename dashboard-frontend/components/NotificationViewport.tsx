@@ -71,7 +71,7 @@ function NotificationItem({
       role="status"
       className={`pointer-events-auto flex w-full items-start gap-3 rounded-lg border-2 p-4 shadow-lg ${style.container}`}
     >
-      <Icon className={`mt-0.5 h-5 w-5 flex-shrink-0 ${style.icon}`} />
+      <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${style.icon}`} />
       <div className="min-w-0 flex-1">
         {notification.title && (
           <h3 className="text-sm font-semibold text-gray-900">

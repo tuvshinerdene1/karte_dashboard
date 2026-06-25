@@ -15,11 +15,9 @@ interface FlowStageProps {
 }
 
 export default function FlowStage({
-  stageId,
   label,
   mongolian,
   stageData,
-  animationPhase,
 }: FlowStageProps) {
   const bottleneckIndex = stageData?.bottleneckIndex ?? 0;
 
@@ -64,14 +62,14 @@ export default function FlowStage({
   }, [stageData?.count]);
 
   return (
-    <div className="flex flex-col items-center relative w-32 flex-shrink-0">
+    <div className="flex flex-col items-center relative w-32 shrink-0">
       {/* Main stage circle */}
       <div
         className={`relative w-24 h-24 rounded-full border-2 ${colors.border} ${colors.bg} shadow-lg overflow-hidden flex items-center justify-center`}
       >
         {/* Animated background pulse */}
         <div
-          className={`absolute inset-0 opacity-30 rounded-full animate-pulse bg-gradient-to-br ${colors.accent}`}
+          className={`absolute inset-0 opacity-30 rounded-full animate-pulse bg-linear-to-br ${colors.accent}`}
           style={{
             animation: `pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite`,
           }}
@@ -115,7 +113,7 @@ export default function FlowStage({
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
             <div
-              className={`h-full bg-gradient-to-r ${colors.accent} transition-all duration-300`}
+              className={`h-full bg-linear-to-r ${colors.accent} transition-all duration-300`}
               style={{ width: `${bottleneckIndex * 100}%` }}
             ></div>
           </div>

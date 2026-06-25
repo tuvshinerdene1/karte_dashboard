@@ -20,9 +20,9 @@ export default function EnhancedAlerts({
       case 'overdue':
         return <AlertCircle className="w-5 h-5 text-orange-600" />;
       case 'escalation':
-        return <TrendingUp className="w-5 h-5 text-red-600" />;
+        return <TrendingUp className="w-5 h-5 text-purple-600" />;
       case 'error':
-        return <AlertCircle className="w-5 h-5 text-red-700" />;
+        return <AlertCircle className="w-5 h-5 text-pink-700" />;
       case 'info':
         return <CheckCircle2 className="w-5 h-5 text-green-600" />;
       default:
@@ -34,8 +34,8 @@ export default function EnhancedAlerts({
     const styles: Record<Alert['type'], string> = {
       'reminder': 'bg-blue-50 border-blue-200',
       'overdue': 'bg-orange-50 border-orange-200',
-      'escalation': 'bg-red-50 border-red-200',
-      'error': 'bg-red-100 border-red-300',
+      'escalation': 'bg-purple-50 border-purple-200',
+      'error': 'bg-pink-100 border-pink-300',
       'info': 'bg-green-50 border-green-200',
     };
     return styles[type];
@@ -45,8 +45,8 @@ export default function EnhancedAlerts({
     const styles: Record<Alert['type'], string> = {
       'reminder': 'text-blue-800',
       'overdue': 'text-orange-800',
-      'escalation': 'text-red-800',
-      'error': 'text-red-900',
+      'escalation': 'text-purple-800',
+      'error': 'text-pink-900',
       'info': 'text-green-800',
     };
     return styles[type];
@@ -89,7 +89,7 @@ export default function EnhancedAlerts({
 
             <button
               onClick={() => resolveAlert(alert.id)}
-              className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+              className="shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

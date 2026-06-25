@@ -115,13 +115,13 @@ export default function InsuranceProcessing({
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {claim.status === 'approved' && (
-                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                      <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
                     )}
                     {claim.status === 'processing' && (
-                      <Clock className="w-5 h-5 text-blue-600 flex-shrink-0 animate-spin" />
+                      <Clock className="w-5 h-5 text-blue-600 shrink-0 animate-spin" />
                     )}
                     {isError && (
-                      <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                      <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
                     )}
 
                     <div className="text-left min-w-0">
@@ -134,7 +134,7 @@ export default function InsuranceProcessing({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="flex items-center gap-3 shrink-0">
                     <div className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColor}`}>
                       {statusLabel}
                     </div>

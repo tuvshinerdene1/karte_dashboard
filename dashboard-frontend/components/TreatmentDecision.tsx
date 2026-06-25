@@ -93,7 +93,7 @@ export default function TreatmentDecision({
               }`}
             >
               <div className="flex items-start gap-3">
-                <Icon className={`w-6 h-6 flex-shrink-0 ${treatment.textColor} mt-1`} />
+                <Icon className={`w-6 h-6 shrink-0 ${treatment.textColor} mt-1`} />
                 <div className="min-w-0">
                   <h4 className={`font-semibold ${treatment.textColor}`}>{treatment.label}</h4>
                   <p className="text-xs text-gray-600 mt-1">{treatment.mongolian}</p>

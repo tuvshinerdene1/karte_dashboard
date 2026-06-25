@@ -1,18 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useHealthcareFlowStore, TreatmentType } from '@/store/healthcareFlowStore';
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
-import TreatmentDecision from './TreatmentDecision';
+import { useHealthcareFlowStore } from '@/store/healthcareFlowStore';
+import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import DailyTreatmentLoop from './DailyTreatmentLoop';
 import InsuranceProcessing from './InsuranceProcessing';
 import StatusTransitionIndicator from './StatusTransitionIndicator';
 
-interface PatientCase {
-  id: string;
-  name: string;
-  expanded: boolean;
-}
 
 export default function PatientCaseManagement() {
   const { addPatient, patientsInTreatmentLoop } = useHealthcareFlowStore();
@@ -113,7 +107,7 @@ export default function PatientCaseManagement() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-4 flex-shrink-0">
+                  <div className="flex items-center gap-4 shrink-0">
                     <div className="text-right">
                       <p className="text-sm font-semibold text-gray-900">₮{treatmentCost.toLocaleString()}</p>
                       <p className="text-xs text-gray-600">{treatment.currentStatus}</p>

@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useHealthcareFlowStore } from '@/store/healthcareFlowStore';
 
 interface MetadataPopoverProps {

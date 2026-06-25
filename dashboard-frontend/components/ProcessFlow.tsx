@@ -1,30 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import FlowVisualization from './FlowVisualization';
 import FlowMetrics from './FlowMetrics';
 import { useFlowStore } from '@/store/flowStore';
 
 export default function ProcessFlow() {
-  const [isLoading, setIsLoading] = useState(true);
   const initializeFlow = useFlowStore((state) => state.initializeFlow);
 
   useEffect(() => {
     initializeFlow();
-    setIsLoading(false);
   }, [initializeFlow]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading flow visualization...</p>
-        </div>
-      </div>
-    );
-  }
-
+//let child components handle their own loading
   return (
     <div className="space-y-8">
       <div className="bg-white rounded-lg shadow-lg p-8">

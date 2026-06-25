@@ -50,7 +50,7 @@ export default function FlowVisualization() {
 
   return (
     <div 
-      className={`relative w-full h-96 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden border border-gray-200 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+      className={`relative w-full h-96 bg-linear-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden border border-gray-200 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
     >
       {/* Background grid - fixed position */}
       <svg className="absolute inset-0 w-full h-full opacity-10 pointer-events-none" width="100%" height="100%">
@@ -75,7 +75,7 @@ export default function FlowVisualization() {
           {STAGES.map((stage, index) => (
             <div key={stage.id} className="flex items-center">
               {/* Stage Circle */}
-              <div className="w-32 flex-shrink-0">
+              <div className="w-32 shrink-0">
                 <FlowStage
                   stageId={stage.id}
                   label={stage.label}
@@ -87,7 +87,7 @@ export default function FlowVisualization() {
 
               {/* Connector */}
               {index < STAGES.length - 1 && (
-                <div className="w-32 h-16 flex-shrink-0">
+                <div className="w-32 h-16 shrink-0">
                   <FlowConnector
                     fromStage={stage.id}
                     toStage={STAGES[index + 1].id}
@@ -108,7 +108,7 @@ export default function FlowVisualization() {
         <div className="space-y-1 text-xs">
           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500"></div><span>Normal Flow</span></div>
           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-500"></div><span>Bottleneck</span></div>
-          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500"></div><span>Critical</span></div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-500"></div><span>Critical</span></div>
         </div>
       </div>
 

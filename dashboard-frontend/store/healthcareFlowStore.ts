@@ -181,9 +181,9 @@ export const useHealthcareFlowStore = create<HealthcareFlowState>((set, get) => 
         // Simulate insurance processing
         const insuranceMetrics = {
           ...state.insuranceMetrics,
-          totalClaimsSent: state.insuranceMetrics.totalClaimsSent + Math.floor(Math.random() * 2),
-          approvedClaims: state.insuranceMetrics.approvedClaims + Math.floor(Math.random() * 1.5),
-          errorCount: Math.max(0, state.insuranceMetrics.errorCount + Math.floor((Math.random() - 0.7) * 2)),
+          totalClaimsSent: state.insuranceMetrics.totalClaimsSent + Math.floor(Math.random() * 4),
+          approvedClaims: state.insuranceMetrics.approvedClaims + Math.floor(Math.random()),
+          errorCount: Math.max(0, state.insuranceMetrics.errorCount + Math.floor((Math.random() - 0.5) * 2)),
         };
 
         return {
@@ -234,23 +234,23 @@ export const useHealthcareFlowStore = create<HealthcareFlowState>((set, get) => 
 
     insuranceClaims: [],
 
-    pricing: {
-      normalDiagnosis: 5000,
-      хэвтэнPerDay: 25000,
-      сэргээн_засахPerDay: 18000,
-      procedures: {
-        '血液検査': 3000,
-        'MRI': 50000,
-        'CT': 40000,
-        '心電図': 2000,
-      },
-      medications: {
-        '抗生物質': 5000,
-        '痛み止め': 2000,
-        '解熱剤': 1500,
-        'ビタミン': 1000,
-      },
-    },
+   pricing: {
+    normalDiagnosis: 5000,        
+    хэвтэнPerDay: 25000, 
+    сэргээн_засахPerDay: 18000,  
+    procedures: {
+    'Blood Test': 3000,
+    'MRI': 50000,
+    'CT Scan': 40000,
+    'ECG': 2000,
+  },
+    medications: {
+      'Antibiotics': 5000,
+      'Painkillers': 2000,
+      'Antipyretics': 1500,      
+      'Vitamins': 1000,
+  },
+},
 
     initializeHealthcareFlow: () => {
       startMetricsSimulation();

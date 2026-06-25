@@ -89,7 +89,7 @@ function NotificationCard({
           type="button"
           aria-label="Dismiss notification"
           onClick={() => onDismiss(alert.id)}
-          className="flex-shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-white/70 hover:text-gray-700"
+          className="shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-white/70 hover:text-gray-700"
         >
           <X className="h-4 w-4" />
         </button>

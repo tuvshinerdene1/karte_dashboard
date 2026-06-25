@@ -44,9 +44,9 @@ export default function AlertsSection() {
           }`}
         >
           <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 mt-1">
+            <div className="shrink-0 mt-1">
               {alert.severity === 'critical' && (
-                <AlertCircle className="w-6 h-6 text-red-600" />
+                <AlertCircle className="w-6 h-6 text-purple-600" />
               )}
               {alert.severity === 'warning' && (
                 <AlertTriangle className="w-6 h-6 text-yellow-600" />

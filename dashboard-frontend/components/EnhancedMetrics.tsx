@@ -84,7 +84,7 @@ function MetricCard({
             </div>
           )}
         </div>
-        {icon && <div className={`${colors.icon} flex-shrink-0`}>{icon}</div>}
+        {icon && <div className={`${colors.icon} shrink-0`}>{icon}</div>}
       </div>
     </div>
   );
@@ -113,8 +113,9 @@ export default function EnhancedMetrics() {
     : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" color="light-blue">
       {/* Appointment Metrics */}
+
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">цаг захиалга (Appointment)</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -151,7 +152,7 @@ export default function EnhancedMetrics() {
       {/* Doctor Metrics */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">эмч (Doctor)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4" color="light-green">
           <MetricCard
             label="Total Doctors"
             value={doctorMetrics.totalDoctors}
@@ -192,7 +193,7 @@ export default function EnhancedMetrics() {
       {/* Insurance Metrics */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">ЭМД (Insurance)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4" color="light-purple">
           <MetricCard
             label="Claims Sent"
             value={insuranceMetrics.totalClaimsSent}
@@ -232,7 +233,7 @@ export default function EnhancedMetrics() {
         </div>
 
         {/* Insurance Details */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" color="light-green">
           <MetricCard
             label="Server Issues"
             value={insuranceMetrics.serverIssues}
@@ -260,7 +261,7 @@ export default function EnhancedMetrics() {
       {/* Completion Metrics */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-4">DONE (Completion)</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4" color="light-yellow">
           <MetricCard
             label="Completed"
             value={completionMetrics.completedProcesses}
@@ -304,7 +305,7 @@ export default function EnhancedMetrics() {
       {patientsInTreatmentLoop.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Treatment Loops</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4" color="dark-blue">
             <MetricCard
               label="Total Active"
               value={patientsInTreatmentLoop.length}

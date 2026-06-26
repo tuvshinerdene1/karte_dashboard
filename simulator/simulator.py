@@ -25,7 +25,7 @@ def api_post(url, payload):
 
 st.set_page_config(page_title="Hospital Flow Master", layout="wide", page_icon="🏥")
 
-# --- RAW API HELPERS (No Streamlit Decorators - Used by Thread) ---
+# --- RAW API HELPERS ---
 def raw_fetch_services(h_id):
     try: return api_get(f"{API_BASE_URL}/{h_id}/service").json()
     except: return []
@@ -38,7 +38,7 @@ def raw_fetch_staff_for_step(step_id):
     try: return api_get(f"{API_BASE_URL}/steps/{step_id}/staff").json()
     except: return []
 
-# --- CACHED API HELPERS (For UI only) ---
+# --- CACHED API HELPERS ---
 @st.cache_data(ttl=60)
 def fetch_hospitals():
     try: return api_get(API_BASE_URL).json()
@@ -58,15 +58,13 @@ def cached_fetch_staff(step_id):
 
 # --- BACKGROUND ENGINE ---
 def run_simulation_task(sim_entry, work_list, num_patients, stress, speed, start_dt, stagger, assignments):
-    """
-    Runs in a background thread.
-    Launches each patient journey in parallel to simulate concurrent hospital activity.
-    """
     try:
         def simulate_patient(p_index, h_id, s_id):
-            p_id = f"SIM-{sim_entry['id']}-P{p_index}"
+            p_id = f"SIM-{sim_entry['id']}-P{p_index}-{random.randint(10,99)}"
             
-            # Arrival Time (Staggered)
+            # Global jitter to prevent 100 threads hitting the API at the exact same microsecond
+            time.sleep(random.uniform(0, 2)) 
+
             arrival_offset = p_index * stagger * random.uniform(0.7, 1.3)
             current_pseudo_time = start_dt + timedelta(minutes=arrival_offset)
             
@@ -78,7 +76,6 @@ def run_simulation_task(sim_entry, work_list, num_patients, stress, speed, start
                 in_room = False
                 while not in_room:
                     assigned_id = assignments.get(step_id)
-                    
                     payload = {
                         "patient_identifier": p_id, 
                         "hospital_step_id": step_id,
@@ -86,15 +83,13 @@ def run_simulation_task(sim_entry, work_list, num_patients, stress, speed, start
                         "staff_id": assigned_id,
                         "custom_timestamp": current_pseudo_time.isoformat()
                     }
-                    
                     response = api_post(f"{API_BASE_URL}/events", payload)
                     
                     if response.status_code == 201:
                         in_room = True
                     elif response.status_code == 202:
-                        # Patient is WAITING in the queue
                         current_pseudo_time += timedelta(minutes=1) 
-                        time.sleep(2 / speed) 
+                        time.sleep(1 / speed) 
                     else:
                         raise Exception(f"API Error: {response.text}")
 
@@ -113,19 +108,18 @@ def run_simulation_task(sim_entry, work_list, num_patients, stress, speed, start
                     "custom_timestamp": current_pseudo_time.isoformat()
                 })
 
-        # --- CONCURRENT PATIENT EXECUTION ---
-        # We launch all patient journeys at once so they compete for staff resources
-        with concurrent.futures.ThreadPoolExecutor(max_workers=num_patients + 5) as patient_executor:
+        # CALCULATE TOTAL PATIENTS ACROSS ALL SERVICES
+        total_patients = len(work_list) * num_patients
+        
+        # INCREASE WORKERS: Allow everyone to run simultaneously
+        with concurrent.futures.ThreadPoolExecutor(max_workers=total_patients + 10) as patient_executor:
             futures = []
             for h_id, s_id in work_list:
                 for i in range(num_patients):
                     futures.append(patient_executor.submit(simulate_patient, i, h_id, s_id))
-            
-            # Wait for all patient journeys in this simulation to finish
             concurrent.futures.wait(futures)
-        
+            
         sim_entry['status'] = "Completed ✅"
-
     except Exception as e:
         sim_entry['status'] = f"Error ❌: {str(e)}"
 
@@ -133,8 +127,7 @@ def run_simulation_task(sim_entry, work_list, num_patients, stress, speed, start
 if 'simulations' not in st.session_state:
     st.session_state.simulations = []
 
-st.title("🏥 Multi-Simulation Manager")
-st.markdown("Patients will now **wait in queue** if all assigned doctors for a step are busy.")
+st.title("🏥 Hospital Flow Master")
 
 col1, col2 = st.columns([1, 1])
 final_doctor_assignments = {}
@@ -173,8 +166,9 @@ with col2:
     
     stagger = st.number_input("Mins between patient arrivals", 0, 60, 10)
     num_p = st.number_input("Patients per stream", 1, 100, 5)
-    speed = st.slider("Sim Speed (Higher = Faster)", 1, 1000, 100)
-    stress = st.slider("Step Duration Stress (1.0 = Normal)", 0.1, 5.0, 1.0)
+    
+    speed = st.slider("Sim Speed (1s real : X mins sim)", 0.01, 500.0, 50.0, step=0.01)
+    stress = st.slider("Step Duration Stress", 0.1, 5.0, 1.0)
 
     if st.button("🚀 Launch Simulation", use_container_width=True):
         work_list = []

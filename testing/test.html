@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket Monitor</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #1a1a1a; color: #fff; padding: 20px; }
+        #log { background: #000; padding: 15px; border-radius: 5px; height: 400px; overflow-y: auto; border: 1px solid #444; }
+        .entry { margin-bottom: 8px; padding: 5px; border-left: 3px solid #007bff; background: #222; }
+        .alert { border-left-color: #ff4757; background: #3d1a1a; }
+        .waiting { border-left-color: #eccc68; }
+    </style>
+</head>
+<body>
+    <h2>📡 Live Hospital Socket Monitor</h2>
+    <div id="status">Connecting...</div>
+    <br>
+    <div id="log"></div>
+
+    <script>
+        // 1. Connect to your backend
+        const socket = io("http://localhost:8080");
+
+        const logDiv = document.getElementById('log');
+        const statusDiv = document.getElementById('status');
+
+        function addLog(msg, type = '') {
+            const div = document.createElement('div');
+            div.className = `entry ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logDiv.prepend(div);
+        }
+
+        socket.on('connect', () => {
+            statusDiv.innerHTML = "🟢 Connected to Backend";
+            statusDiv.style.color = "lightgreen";
+            
+            // 2. JOIN A ROOM (Replace with a real hospital ID from your DB)
+            // If you don't do this, you might not receive the events!
+            const hospitalId = "6cfa6852-88e1-403f-9509-dd669aa58d18"; 
+            socket.emit('join_hospital', hospitalId);
+            addLog(`Joined hospital room: ${hospitalId}`);
+        });
+
+        // 3. Listen for Patient Updates
+        socket.on('HOSPITAL_UPDATE', (data) => {
+            console.log("Received Update:", data);
+            const type = data.status === 'waiting' ? 'waiting' : '';
+            addLog(`<b>${data.action}</b>: Patient ${data.patient_identifier} is now <u>${data.status}</u> at step ${data.hospital_step_id}`, type);
+        });
+
+        // 4. Listen for Bottleneck Alerts
+        socket.on('BOTTLENECK_ALERT', (data) => {
+            console.log("Received Alert:", data);
+            addLog(`🚨 <b>ALERT:</b> ${data.message}`, 'alert');
+        });
+
+        socket.on('disconnect', () => {
+            statusDiv.innerHTML = "🔴 Disconnected";
+            statusDiv.style.color = "red";
+        });
+    </script>
+</body>
+</html>

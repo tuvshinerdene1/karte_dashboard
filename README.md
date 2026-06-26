@@ -46,9 +46,8 @@ npm install
 ```
 
 ## Set up environment variables
-```
-ncp .env.example .env
-```
+First create `.env` file in the root folder of back end project
+
 Edit `.env` with your configuration:
 ```
 PORT=8080

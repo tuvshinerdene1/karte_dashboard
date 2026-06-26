@@ -1,5 +1,6 @@
 require('dotenv').config(); // Load this at the very top
 const express = require('express');
+const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const db = require('./config/database');
@@ -21,6 +22,7 @@ const io = new Server(server, {
     }
 });
 
+app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'], credentials: true }));
 app.use(express.json());
 
 // 2. Middleware to make 'io' accessible in your Controllers
@@ -36,8 +38,13 @@ io.on('connection', (socket) => {
 
     // You can handle "rooms" here if you want to separate data by hospital_id
     socket.on('join_hospital', (hospitalId) => {
-        socket.join(hospitalId);
+        socket.join(String(hospitalId));
         console.log(`🏥 Client joined room: ${hospitalId}`);
+    });
+
+    socket.on('join_admin', () => {
+        socket.join('admin');
+        console.log('🛡️ Admin client joined admin room');
     });
 
     socket.on('disconnect', () => {

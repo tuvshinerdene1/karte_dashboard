@@ -2,7 +2,10 @@ const SupportModel = require('../models/SupportModel');
 
 exports.getNotifications = async (req, res) => {
     try {
-        const notifications = await SupportModel.getNotificationsForUser(req.user.userId);
+        const notifications = await SupportModel.getNotificationsForUser(
+            req.user.userId,
+            req.user.role
+        );
         res.json(notifications);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -68,6 +71,10 @@ exports.createRequest = async (req, res) => {
 exports.updateRequest = async (req, res) => {
     try {
         const { title, description, status, priority, assigned_operator_id } = req.body;
+
+        if (!title) {
+            return res.status(400).json({ message: 'title is required' });
+        }
 
         const updatedRequest = await SupportModel.updateSupportRequest(
             req.params.id,

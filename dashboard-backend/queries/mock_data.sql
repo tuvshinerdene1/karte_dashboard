@@ -108,4 +108,47 @@ BEGIN
         LIMIT 1;
     END LOOP;
 
+    END $$;
+
+-- Demo login accounts (password for all: password123)
+DO $$
+DECLARE
+    director_user_id UUID;
+    first_hospital_id UUID;
+BEGIN
+    SELECT id INTO first_hospital_id FROM hospitals ORDER BY name LIMIT 1;
+
+    INSERT INTO users (username, password_hash, role)
+    VALUES (
+        'admin',
+        '$2b$10$NqJtAp5.ZLZ2EHR4.Z7Km.Vgi3H6iPxV3YkBQch1Qcghy..zSnsLa',
+        'admin'
+    )
+    ON CONFLICT (username) DO NOTHING;
+
+    INSERT INTO users (username, password_hash, role)
+    VALUES (
+        'director',
+        '$2b$10$NqJtAp5.ZLZ2EHR4.Z7Km.Vgi3H6iPxV3YkBQch1Qcghy..zSnsLa',
+        'hospital_director'
+    )
+    ON CONFLICT (username) DO NOTHING
+    RETURNING id INTO director_user_id;
+
+    IF director_user_id IS NULL THEN
+        SELECT id INTO director_user_id FROM users WHERE username = 'director';
+    END IF;
+
+    IF director_user_id IS NOT NULL AND first_hospital_id IS NOT NULL THEN
+        IF NOT EXISTS (SELECT 1 FROM staff WHERE user_id = director_user_id) THEN
+            INSERT INTO staff (user_id, hospital_id, full_name, specialization, phone_number)
+            VALUES (
+                director_user_id,
+                first_hospital_id,
+                'Dr. Hospital Director',
+                'Administration',
+                '555-0000'
+            );
+        END IF;
+    END IF;
 END $$;

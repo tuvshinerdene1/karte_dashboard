@@ -1,14 +1,34 @@
 const db = require('../config/database');
 
 class SupportModel {
-    static async getNotificationsForUser(userId) {
+    static async getNotificationsForUser(userId, role) {
+        const isAdmin = role === 'admin' || role === 'operator' || role === 'dev';
+
         const query = `
-            SELECT id, visit_event_id, type, message, is_read, created_at
-            FROM notifications
-            WHERE user_id = $1
-            ORDER BY created_at DESC
+            SELECT 
+                n.id,
+                n.visit_event_id,
+                n.type,
+                n.message,
+                n.is_read,
+                n.created_at,
+                ve.hospital_step_id,
+                ss.step_name,
+                s.id AS service_id,
+                s.service_name,
+                st.full_name AS staff_name
+            FROM notifications n
+            JOIN visit_events ve ON ve.id = n.visit_event_id
+            JOIN hospital_steps hs ON hs.id = ve.hospital_step_id
+            JOIN service_steps ss ON ss.id = hs.step_id
+            JOIN services s ON s.id = ss.service_id
+            LEFT JOIN staff st ON st.id = ve.staff_id
+            ${isAdmin ? '' : 'WHERE n.user_id = $1'}
+            ORDER BY n.created_at DESC
         `;
-        const { rows } = await db.query(query, [userId]);
+        const { rows } = isAdmin
+            ? await db.query(query)
+            : await db.query(query, [userId]);
         return rows;
     }
 
@@ -17,7 +37,13 @@ class SupportModel {
             UPDATE notifications
             SET is_read = TRUE
             WHERE id = $1 AND user_id = $2
-            RETURNING id, visit_event_id, type, message, is_read, created_at
+            RETURNING 
+                id,
+                visit_event_id,
+                type,
+                message,
+                is_read,
+                created_at
         `;
         const { rows } = await db.query(query, [notificationId, userId]);
         return rows[0];

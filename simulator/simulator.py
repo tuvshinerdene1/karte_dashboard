@@ -3,31 +3,45 @@ import requests
 import time
 import random
 import threading
-import concurrent.futures  # <--- Added this missing import
+import concurrent.futures
+import os
 from datetime import datetime, timedelta
 
 # --- CONFIGURATION ---
-API_BASE_URL = "http://localhost:8080/api/hospital"
+API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:8080/api/hospital")
+SIMULATOR_API_KEY = os.environ.get("SIMULATOR_API_KEY", "simulator-dev-key")
+
+def api_headers():
+    headers = {"Content-Type": "application/json"}
+    if SIMULATOR_API_KEY:
+        headers["X-Simulator-Key"] = SIMULATOR_API_KEY
+    return headers
+
+def api_get(url):
+    return requests.get(url, headers=api_headers())
+
+def api_post(url, payload):
+    return requests.post(url, json=payload, headers=api_headers())
 
 st.set_page_config(page_title="Hospital Flow Master", layout="wide", page_icon="🏥")
 
 # --- RAW API HELPERS (No Streamlit Decorators - Used by Thread) ---
 def raw_fetch_services(h_id):
-    try: return requests.get(f"{API_BASE_URL}/{h_id}/service").json()
+    try: return api_get(f"{API_BASE_URL}/{h_id}/service").json()
     except: return []
 
 def raw_fetch_steps(h_id, s_id):
-    try: return requests.get(f"{API_BASE_URL}/{h_id}/service/{s_id}/steps").json()
+    try: return api_get(f"{API_BASE_URL}/{h_id}/service/{s_id}/steps").json()
     except: return []
 
 def raw_fetch_staff_for_step(step_id):
-    try: return requests.get(f"{API_BASE_URL}/steps/{step_id}/staff").json()
+    try: return api_get(f"{API_BASE_URL}/steps/{step_id}/staff").json()
     except: return []
 
 # --- CACHED API HELPERS (For UI only) ---
 @st.cache_data(ttl=60)
 def fetch_hospitals():
-    try: return requests.get(API_BASE_URL).json()
+    try: return api_get(API_BASE_URL).json()
     except: return []
 
 @st.cache_data(ttl=60)
@@ -73,7 +87,7 @@ def run_simulation_task(sim_entry, work_list, num_patients, stress, speed, start
                         "custom_timestamp": current_pseudo_time.isoformat()
                     }
                     
-                    response = requests.post(f"{API_BASE_URL}/events", json=payload)
+                    response = api_post(f"{API_BASE_URL}/events", payload)
                     
                     if response.status_code == 201:
                         in_room = True
@@ -92,7 +106,7 @@ def run_simulation_task(sim_entry, work_list, num_patients, stress, speed, start
                 current_pseudo_time += timedelta(minutes=dur)
 
                 # --- PHASE 3: EXIT ---
-                requests.post(f"{API_BASE_URL}/events", json={
+                api_post(f"{API_BASE_URL}/events", {
                     "patient_identifier": p_id, 
                     "hospital_step_id": step_id,
                     "action": "END", 

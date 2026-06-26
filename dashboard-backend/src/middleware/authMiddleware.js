@@ -7,6 +7,16 @@ module.exports = (req, res, next) =>{
         return next();
     }
 
+    const simulatorKey = req.header('X-Simulator-Key');
+    if (
+        simulatorKey &&
+        process.env.SIMULATOR_API_KEY &&
+        simulatorKey === process.env.SIMULATOR_API_KEY
+    ) {
+        req.user = { userId: null, role: 'simulator' };
+        return next();
+    }
+
     const authHeader = req.header('Authorization');
     const token = authHeader && authHeader.split(' ')[1];
 

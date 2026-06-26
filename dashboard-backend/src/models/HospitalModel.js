@@ -98,14 +98,16 @@ class HospitalModel {
 
             // 1. Get hospital, service, and step configuration info
             const stepInfo = await client.query(
-                `SELECT hs.hospital_id, ss.service_id, ss.step_name, hs.mid_threshold_minutes, hs.high_threshold_minutes
+                `SELECT hs.hospital_id, ss.service_id, ss.step_name, s.service_name,
+                        hs.mid_threshold_minutes, hs.high_threshold_minutes
                  FROM hospital_steps hs
                  JOIN service_steps ss ON hs.step_id = ss.id
+                 JOIN services s ON ss.service_id = s.id
                  WHERE hs.id = $1`, [hospital_step_id]
             );
 
             if (stepInfo.rows.length === 0) throw new Error("Invalid hospital_step_id");
-            const { hospital_id, service_id, step_name, mid_threshold_minutes, high_threshold_minutes } = stepInfo.rows[0];
+            const { hospital_id, service_id, step_name, service_name, mid_threshold_minutes, high_threshold_minutes } = stepInfo.rows[0];
 
             // 2. Find or create visit
             let visitId;
@@ -166,38 +168,84 @@ class HospitalModel {
                     `, [assignedStaffId, custom_timestamp, visitId, hospital_step_id]);
 
                     await client.query('COMMIT');
-                    return { success: true, status: 'in_progress', message: "Patient started treatment" };
+                    return {
+                      success: true,
+                      status: 'in_progress',
+                      message: "Patient started treatment",
+                      hospital_id,
+                    };
                 } else {
                     // E. REMAIN IN WAITING
                     await client.query('COMMIT');
-                    return { success: true, status: 'waiting', message: "No staff available, patient is in queue" };
+                    return {
+                      success: true,
+                      status: 'waiting',
+                      message: "No staff available, patient is in queue",
+                      hospital_id,
+                    };
                 }
             }
 
             else if (action === 'END') {
                 // A. Fetch the entered_at time to calculate duration before completing
                 const currentEventRes = await client.query(
-                    `SELECT id, entered_at FROM visit_events 
+                    `SELECT id, entered_at, staff_id FROM visit_events 
                      WHERE visit_id = $1 AND hospital_step_id = $2 AND status = 'in_progress'`,
                     [visitId, hospital_step_id]
                 );
 
-                if (currentEventRes.rows.length === 0) throw new Error("No active treatment found to end");
+                let eventId;
+                let enteredAt;
+                let staffId = null;
 
-                const eventId = currentEventRes.rows[0].id;
-                const enteredAt = currentEventRes.rows[0].entered_at;
+                if (currentEventRes.rows.length === 0) {
+                    const waitingEventRes = await client.query(
+                        `SELECT id, arrived_at, staff_id FROM visit_events 
+                         WHERE visit_id = $1 AND hospital_step_id = $2 AND status = 'waiting' 
+                         ORDER BY arrived_at DESC LIMIT 1`,
+                        [visitId, hospital_step_id]
+                    );
+
+                    if (waitingEventRes.rows.length === 0) {
+                        // Fallback: Create a waiting event if none exists (handles race conditions)
+                        const createRes = await client.query(
+                            `INSERT INTO visit_events (visit_id, hospital_step_id, arrived_at, status)
+                             VALUES ($1, $2, COALESCE($3, CURRENT_TIMESTAMP), 'waiting')
+                             RETURNING id, arrived_at, staff_id`,
+                            [visitId, hospital_step_id, custom_timestamp]
+                        );
+                        
+                        if (createRes.rows.length === 0) {
+                            throw new Error(`Failed to create visit event for patient ${patient_identifier} at step ${hospital_step_id}`);
+                        }
+
+                        eventId = createRes.rows[0].id;
+                        enteredAt = createRes.rows[0].arrived_at;
+                        staffId = createRes.rows[0].staff_id;
+                    } else {
+                        eventId = waitingEventRes.rows[0].id;
+                        enteredAt = waitingEventRes.rows[0].arrived_at;
+                        staffId = waitingEventRes.rows[0].staff_id;
+                    }
+                } else {
+                    eventId = currentEventRes.rows[0].id;
+                    enteredAt = currentEventRes.rows[0].entered_at;
+                    staffId = currentEventRes.rows[0].staff_id;
+                }
+
                 const exitTime = custom_timestamp ? new Date(custom_timestamp) : new Date();
 
                 // B. Calculate duration in minutes
-                const durationMins = (exitTime - new Date(enteredAt)) / (1000 * 60);
+                const durationMins = enteredAt ? (exitTime - new Date(enteredAt)) / (1000 * 60) : 0;
 
                 // C. Update the event to completed
                 await client.query(`
                     UPDATE visit_events
-                    SET exited_at = $1,
+                    SET entered_at = COALESCE(entered_at, $1),
+                        exited_at = $2,
                         status = 'completed'
-                    WHERE id = $2
-                `, [exitTime, eventId]);
+                    WHERE id = $3
+                `, [enteredAt, exitTime, eventId]);
 
                 // D. BOTTLENECK DETECTION LOGIC
                 let alertType = null;
@@ -208,20 +256,30 @@ class HospitalModel {
                 }
 
                 let alertGenerated = false;
-                if (alertType) {
+                let notification = null;
+                if (alertType && staffId) {
                     const alertMsg = `Patient ${patient_identifier} stayed ${Math.round(durationMins)} mins in ${step_name} (Threshold: ${mid_threshold_minutes}/${high_threshold_minutes})`;
 
                     const userResult = await client.query(`
                         SELECT user_id FROM staff WHERE id = $1
-                    `, [currentEventRes.rows[0].staff_id]);
+                    `, [staffId]);
                     const userId = userResult.rows[0] ? userResult.rows[0].user_id : null;
 
                     if (userId) {
-                        await client.query(`
+                        const notificationResult = await client.query(`
                             INSERT INTO notifications (user_id, visit_event_id, type, message)
                             VALUES ($1, $2, $3, $4)
+                            RETURNING id, visit_event_id, type, message, is_read, created_at
                         `, [userId, eventId, alertType, alertMsg]);
                         alertGenerated = true;
+                        const createdNotification = notificationResult.rows[0];
+                        notification = {
+                            ...createdNotification,
+                            hospital_step_id,
+                            step_name,
+                            service_id,
+                            service_name,
+                        };
                     }
                 }
 
@@ -231,7 +289,9 @@ class HospitalModel {
                     status: 'completed',
                     message: "Treatment finished",
                     alert_generated: alertGenerated,
-                    alert_type: alertType
+                    alert_type: alertType,
+                    hospital_id,
+                    notification,
                 };
             }
 
@@ -247,6 +307,7 @@ class HospitalModel {
         SELECT 
             hs.id AS hospital_step_id,
             ss.step_name,
+            s.id AS service_id,
             s.service_name,
             -- Current status counts
             COUNT(CASE WHEN ve.status = 'waiting' THEN 1 END) AS queue_count,
@@ -262,7 +323,7 @@ class HospitalModel {
         LEFT JOIN visit_events ve ON hs.id = ve.hospital_step_id 
             AND (ve.status != 'completed' OR ve.exited_at > NOW() - INTERVAL '1 hour')
         WHERE hs.hospital_id = $1
-        GROUP BY hs.id, ss.step_name, s.service_name, hs.mid_threshold_minutes, hs.high_threshold_minutes
+        GROUP BY hs.id, ss.step_name, s.id, s.service_name, hs.mid_threshold_minutes, hs.high_threshold_minutes
         ORDER BY s.service_name, ss.step_order;
     `;
         const { rows } = await db.query(query, [hospitalId]);
@@ -273,6 +334,7 @@ class HospitalModel {
         SELECT 
             hs.id AS hospital_step_id,
             ss.step_name,
+            s.id AS service_id,
             s.service_name,
             COUNT(CASE WHEN ve.status = 'waiting' THEN 1 END) AS waiting_count,
             COUNT(CASE WHEN ve.status = 'in_progress' THEN 1 END) AS in_progress_count,
@@ -283,7 +345,7 @@ class HospitalModel {
         JOIN services s ON ss.service_id = s.id
         LEFT JOIN visit_events ve ON hs.id = ve.hospital_step_id AND ve.status != 'completed'
         WHERE hs.hospital_id = $1
-        GROUP BY hs.id, ss.step_name, s.service_name, hs.mid_threshold_minutes, hs.high_threshold_minutes, ss.step_order
+        GROUP BY hs.id, ss.step_name, s.id, s.service_name, hs.mid_threshold_minutes, hs.high_threshold_minutes, ss.step_order
         ORDER BY s.service_name, ss.step_order;
     `;
         const { rows } = await db.query(query, [hospitalId]);

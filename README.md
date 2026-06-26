@@ -351,3 +351,9 @@ GET /api/hospitals/:id/services/:name/steps - Fetch the ordered steps for a spec
 
 POST /api/events - To send START and END signals for patients.
 ```
+## Testing the socket connection
+To demonstrate how socket connection is working, I created 2 test files. 
+
+1. testing/test.html -> Open it with browser and run the simulation (backend should be turned on)
+2. After turning on the front end, visit *localhost:3000/test* and that page will show how the real time data transfer via socket is working.
+

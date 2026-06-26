@@ -10,6 +10,7 @@
 ```
 1. npm install
 ```
+it is good idea to run this command after every "git pull" to install necessary dependencies your colleagues may have added. 
 
 ### Development mode
 ```
@@ -44,6 +45,7 @@ cd dashboard-backend
 ```
 npm install
 ```
+it is good idea to run this command after every "git pull" to install necessary dependencies your colleagues may have added. 
 
 ## Set up environment variables
 First create `.env` file in the root folder of back end project
@@ -301,6 +303,8 @@ It mimics patient movement through various hospital services (Cardiology, ER, et
 
 ### Set up instructions 
 **1. Create the virtual environment**
+
+To avoid conflicts within python libraries, you should create virtual environment so that you will have nice and isolated environment. (or dont bother doing it if you are feeling like adventurous)
 ```
 python -m venv vhospital
 ```
@@ -342,6 +346,8 @@ deactivate
 
 
 ### API endpoints required 
+
+those are implemented as im writing this and for further information about API endpoints, please read "Karte dashboard backend project documentation" 
 ```
 GET /api/hospitals - Fetch list of hospitals.
 

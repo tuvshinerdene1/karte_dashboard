@@ -1,4 +1,12 @@
 # Hospital Dashboard system
+The main goal of the project is to monitor the flow of hospital dashboard system usage and take suitable actions before things go south.
+
+This system currently consists of 3 parts.
+
+1. Next.js Front end
+2. Express.js Back end
+3. Python simulation
+
 ## Setting up front end 
 ```
 1. Clone the project
@@ -289,7 +297,8 @@ src/
 └── Bottleneck.js
 ```
 
-[MUST READ] Other backend information available in backend documentation 
+
+Other backend information available in backend documentation !!!
 -------------------------------------------------------------------
 ## Flow simulator (work in progress)
 This Python-based simulator is designed to stress-test our Hospital Bottleneck Detection system. 

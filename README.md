@@ -287,6 +287,7 @@ src/
 └── Bottleneck.js
 ```
 
+[MUST READ] Other backend information available in backend documentation 
 -------------------------------------------------------------------
 ## Flow simulator (work in progress)
 This Python-based simulator is designed to stress-test our Hospital Bottleneck Detection system. 

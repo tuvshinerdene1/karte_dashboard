@@ -11,7 +11,8 @@ router.get('/:id/service', controller.getHospitalServices);
 router.get('/:id/service/:serviceId/steps', controller.getHospitalServiceSteps);
 router.get('/steps/:stepId/staff', controller.getStaffByStep);
 router.get('/:id/staff', controller.getHospitalStaff)
-
+router.get('/:id/dashboard-snapshot', controller.getDashboardSnapshot);
+router.get('/:id/snapshot', controller.getDashboardData);
 // router.patch('/steps/:stepId/thresholds', (req, res, next) => {
 //     if (req.user.role !== 'admin' && req.user.role !== 'operator') {
 //         return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
